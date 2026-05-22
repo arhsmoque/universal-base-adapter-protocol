@@ -40,7 +40,8 @@ The v1.5 baseline was formed from several streams:
 4. research-to-build and pattern-adoption protocols;
 5. two external review passes that tested operational gaps;
 6. emerging AI-era coding-practice material;
-7. external standards and references used to vet whether new patterns were real, emerging, or merely local preference.
+7. successful-path/codemod automation practice;
+8. external standards and references used to vet whether new patterns were real, emerging, or merely local preference.
 
 Some earlier uploaded source files expired during the working session. This journal therefore relies on the preserved generated protocol versions in the workspace, the current v1.5 pack, the available review notes, and the current additional design material. Where a decision depends on an external standard or ecosystem signal, the reference is listed in section 13.
 
@@ -420,7 +421,46 @@ The conformance ladder decides how much proof is needed.
 
 ---
 
-## 17. Final baseline thesis
+## 17. Why successful path capture was added
+
+After v1.5, a new operational insight was added: every successful non-trivial edit path is a reusable asset.
+
+The original protocol already required replay, continuation, metadata, and housekeeping. But it did not explicitly say what to do with a successful route through the codebase after the work was complete. Without capture, the next agent still has to manually read files, trace references, infer boundaries, and rediscover commands before making a similar small edit.
+
+The added rule is:
+
+```text
+When a successful path is likely to recur, distill it into a scriptable path recipe.
+```
+
+### Why this belongs in the baseline
+
+This extends the same doctrine that produced composites and workflows:
+
+```text
+Do not pay repeated reasoning cost for a path that can be encoded once.
+```
+
+It also matches established codemod practice. Mature refactoring ecosystems use recipes, runners, AST transforms, and testable transformations to make repeated edits cheap, reviewable, and consistent. The protocol does not require every path to become a codemod; it creates levels from note -> command -> patch recipe -> codemod -> composite/workflow.
+
+### Why it is not just documentation
+
+A recipe is operational memory. It records:
+
+- where the agent started;
+- how it navigated;
+- which files/symbols mattered;
+- what edits were safe;
+- which command verifies the result;
+- when to promote the path into a script, codemod, composite, or workflow.
+
+### Constraint
+
+Do not generate recipes for one-off trivia. Recipes must reduce future discovery cost. If a recipe becomes stale, housekeeping must remove, archive, or mark it deprecated so it does not pollute future search.
+
+---
+
+## 18. Final baseline thesis
 
 v1.5 should be treated as stable because it is no longer just a set of preferences. It is a coherent operating model:
 
@@ -440,7 +480,7 @@ The baseline should now change slowly. Future revisions should usually be adapte
 
 ---
 
-## 18. Reviewer questions
+## 19. Reviewer questions
 
 A reviewer should judge future revisions with these questions:
 
@@ -457,7 +497,7 @@ A reviewer should judge future revisions with these questions:
 
 ---
 
-## 19. Reference anchors used during v1.5 vetting
+## 20. Reference anchors used during v1.5 vetting
 
 These references were used as external anchors for the v1.5 hardening pass. They informed the direction but were adopted proportionally rather than copied wholesale.
 
@@ -472,10 +512,11 @@ These references were used as external anchors for the v1.5 hardening pass. They
 | Secure development | NIST SSDF | Supports secure-by-design development practices and artifact evidence. |
 | Supply-chain integrity | SLSA | Supports provenance and artifact integrity thinking. |
 | Component verification | OWASP SCVS | Supports proportional verification levels for third-party components. |
+| Automated refactoring | OpenRewrite / jscodeshift / codemod practice | Supports capturing successful repeated edit paths as recipes, commands, scripts, or AST-aware codemods. |
 
 ---
 
-## 20. What should not be forgotten
+## 21. What should not be forgotten
 
 The protocol began with a practical frustration: agents were wasting time rewriting solved tools.
 

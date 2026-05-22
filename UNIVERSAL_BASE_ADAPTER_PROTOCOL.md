@@ -14,6 +14,7 @@
 - `templates/AGENTS.template.md` — repository instruction layer for coding agents.
 - `templates/SPEC_PACKET.md` — spec-first build packet.
 - `templates/METADATA.yml` — compact component metadata.
+- `templates/SCRIPTABLE_PATH_RECIPE.md` — replayable path recipe for repeated edits or similar tool development.
 - `schemas/` — machine-readable metadata, spec, result-envelope, and linter-output schemas.
 - `scripts/check_conformance.py` — dependency-free baseline conformance checker.
 
@@ -593,8 +594,9 @@ For higher conformance levels, add SBOM/provenance checks, dependency scanning, 
 9. Add dry-run, approval, idempotency, and audit for mutation.
 10. Add CLI first when local agent operation matters; add MCP/web/worker after.
 11. Add smoke, failure, contract, replay, and housekeeping tests.
-12. Write/update `METADATA.yml`, `AGENTS.md`, and continuation notes.
-13. Run conformance checks and cleanup scratch artifacts.
+12. If the path succeeded and is likely to recur, capture it as a scriptable path recipe.
+13. Write/update `METADATA.yml`, `AGENTS.md`, continuation notes, and recipe index.
+14. Run conformance checks and cleanup scratch artifacts.
 
 Do not start with the adapter unless the adapter shape is the actual design problem.
 
@@ -660,7 +662,102 @@ Use OpenTelemetry-compatible concepts where practical: traces for request/workfl
 
 ---
 
-## 17. Housekeeping Protocol
+## 17. Successful Path Capture and Scriptable Edit Recipes
+
+Every successful non-trivial edit path should be treated as a candidate for future automation.
+
+The goal is not to automate everything immediately. The goal is to avoid making future agents rediscover the same route through the codebase. After a successful path, capture the minimum reusable recipe that turns the path from manual investigation into a cheap command, codemod, checklist, or MCP/composite candidate.
+
+### Capture trigger
+
+Create or update a scriptable path recipe when at least one is true:
+
+- the same edit shape is likely to recur;
+- the path required tracing through more than two files/modules;
+- the agent used LSP/symbol navigation to locate a stable route;
+- a small change required expensive codebase reading;
+- the edit involved adapter/base boundary placement;
+- the fix added a pattern that future tools should follow;
+- the work exposed a reliable smoke/replay command.
+
+Do not capture one-off trivia. Capture paths that reduce future discovery cost.
+
+### Recipe levels
+
+| Level | Form | Use when |
+|---|---|---|
+| 0 | Note | path is useful but not stable enough to script |
+| 1 | Command recipe | shell/task-runner commands reproduce navigation, checks, or edits |
+| 2 | Patch recipe | scripted file edits, templates, or structured replacement |
+| 3 | Codemod/AST recipe | repeated semantic code transformation across files |
+| 4 | Composite/workflow | repeated multi-step tool development path becomes a reusable tool/workflow |
+
+### Required recipe fields
+
+A scriptable path recipe must record:
+
+```yaml
+recipe:
+  name: ""
+  intent: ""
+  applies_when: []
+  starting_points: []
+  discovery_path:
+    - ""
+  edit_steps:
+    - ""
+  commands:
+    dry_run: ""
+    apply: ""
+    verify: ""
+    rollback: ""
+  touched_surfaces:
+    base: []
+    adapters: []
+    rules_config: []
+    tests: []
+  expected_result_envelope: {}
+  safety:
+    risk_class: ""
+    dry_run_required: true
+    idempotent: true
+  promotion_candidate: "none | command | codemod | composite | workflow | MCP tool"
+```
+
+### Scriptability order
+
+Prefer the cheapest reliable representation:
+
+```text
+AGENTS.md note / METADATA recipe index
+  -> task-runner command
+  -> shell/Python script
+  -> LSP-assisted symbol recipe
+  -> AST/codemod recipe
+  -> composite tool or workflow
+```
+
+Use text replacement only for narrow, stable patterns. Use LSP or AST/codemod approaches when the change depends on symbols, imports, call sites, parameter order, or syntax structure.
+
+### Safety rule
+
+A recipe that mutates files must support dry-run or diff preview before apply. It must be idempotent where practical and must include a verification command.
+
+### Promotion rule
+
+Promote a recipe when the same successful path repeats:
+
+- 2 times -> keep as indexed recipe;
+- 3 times -> add task-runner command or script;
+- 5 times -> consider composite tool, MCP tool, codemod, or compiled workflow.
+
+### Housekeeping rule
+
+Path recipes should reduce search pollution, not add to it. Store them under a known location such as `recipes/`, `tools/recipes/`, `.agents/recipes/`, or `docs/recipes/`, and index them from `AGENTS.md` or `METADATA.yml`. Remove obsolete recipe drafts during housekeeping.
+
+---
+
+## 18. Housekeeping Protocol
 
 Housekeeping is part of done.
 
@@ -692,7 +789,7 @@ Archive policy:
 
 ---
 
-## 18. Escape Hatch Doctrine
+## 19. Escape Hatch Doctrine
 
 The protocol is a control system, not a prison.
 
@@ -712,7 +809,7 @@ Do not silently bypass the protocol. If urgency requires a shortcut, leave a sho
 
 ---
 
-## 19. Anti-Patterns
+## 20. Anti-Patterns
 
 Reject or redesign when you see:
 
@@ -733,7 +830,7 @@ Reject or redesign when you see:
 
 ---
 
-## 20. Done Definition
+## 21. Done Definition
 
 A component is done when:
 
@@ -745,6 +842,7 @@ A component is done when:
 - tests cover smoke, failure, output contract, and mutation behavior if applicable;
 - CLI/web/MCP/worker adapter is thin and validated;
 - budgets, continuation, and replay exist where resource use or failure recovery matters;
+- successful recurring paths are captured as scriptable recipes or explicitly marked one-off;
 - provenance and dependency ownership are recorded;
 - housekeeping has removed/quarantined leftovers;
-- `AGENTS.md` and task-runner commands remain accurate.
+- `AGENTS.md`, recipe index, and task-runner commands remain accurate.

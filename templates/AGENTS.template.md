@@ -75,3 +75,13 @@ Required invariants:
 - Candidate/source cache paths:
 - Files excluded from ordinary discovery:
 - Conformance check: `python scripts/check_conformance.py . --level <0|1|2|3|4> --json`
+
+## Scriptable Path Recipes
+
+- Recipe index:
+- Successful-path capture location:
+- When to add a recipe:
+- Dry-run command convention:
+- Apply command convention:
+- Verify command convention:
+- Deprecated recipe cleanup path:
