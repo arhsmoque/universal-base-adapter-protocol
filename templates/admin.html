@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1A1108">
+<title>Admin</title>
+<!-- Replace with your chosen fonts to match index.html -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<!-- JSZip for ZIP extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* ── VARIABLES ─────────────────────────────────────── */
+:root {
+  --bg:      #0F0A05;
+  --bg2:     #1A1108;
+  --bg3:     #231608;
+  --card:    #1E1409;
+  --card2:   #261B0C;
+  --gold:    #C8962A;
+  --gold2:   #E8B84B;
+  --text:    #EDE0C4;
+  --text2:   #A89070;
+  --text3:   #6B4E2E;
+  --green:   #1FAD5A;
+  --red:     #C0392B;
+  --red2:    #E74C3C;
+  --border:  rgba(200,152,42,0.15);
+  --border2: rgba(200,152,42,0.07);
+  --r:       16px;
+  --r2:      10px;
+  --fd:      'Playfair Display', serif;
+  --fb:      'DM Sans', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);min-height:100vh;-webkit-tap-highlight-color:transparent;}
+
+/* ── PIN SCREEN ─────────────────────────────────────── */
+.pin-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:999;padding:32px;transition:opacity 0.3s;}
+.pin-screen.hidden{opacity:0;pointer-events:none;}
+.pin-logo{font-family:var(--fd);font-size:28px;font-weight:900;color:var(--gold);margin-bottom:6px;}
+.pin-subtitle{font-size:12px;color:var(--text2);margin-bottom:20px;letter-spacing:0.5px;text-align:center;max-width:240px;line-height:1.5;}
+.pin-display{display:flex;gap:12px;margin-bottom:20px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--gold);background:transparent;transition:background 0.15s;}
+.pin-dot.filled{background:var(--gold);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:220px;}
+.pin-key{height:56px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r2);color:var(--text);font-size:20px;font-weight:600;font-family:var(--fb);cursor:pointer;transition:all 0.12s;display:flex;align-items:center;justify-content:center;}
+.pin-key:active{background:var(--card2);transform:scale(0.96);}
+.pin-key.del{font-size:18px;color:var(--text2);}
+.pin-key.empty{visibility:hidden;}
+.pin-error{font-size:12px;color:var(--red2);margin-top:8px;min-height:18px;text-align:center;}
+.pin-first-run{background:rgba(200,152,42,0.1);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:20px;width:100%;max-width:280px;}
+.pin-first-run-title{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;letter-spacing:0.5px;}
+.pin-setup-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;font-family:var(--fb);font-size:14px;color:var(--text);outline:none;text-align:center;letter-spacing:4px;margin-bottom:6px;}
+.pin-setup-btn{width:100%;padding:10px;background:var(--gold);color:var(--bg);border:none;border-radius:var(--r2);font-family:var(--fb);font-size:13px;font-weight:700;cursor:pointer;}
+
+/* ── APP ─────────────────────────────────────────────── */
+.app{display:none;}
+.app.visible{display:block;}
+
+/* ── TOPBAR ──────────────────────────────────────────── */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:var(--fd);font-size:18px;font-weight:900;color:var(--gold);}
+.topbar-role{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);}
+.lock-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:6px 14px;color:var(--text2);font-size:12px;font-weight:600;font-family:var(--fb);cursor:pointer;transition:all 0.15s;}
+.lock-btn:active{background:var(--card);}
+
+/* ── TAB NAV ─────────────────────────────────────────── */
+.tab-nav{display:flex;overflow-x:auto;scrollbar-width:none;background:var(--bg2);border-bottom:1px solid var(--border2);padding:0 8px;}
+.tab-nav::-webkit-scrollbar{display:none;}
+.tab-btn{flex-shrink:0;padding:12px 16px;font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-btn.hidden{display:none;}
+
+/* ── PANELS ──────────────────────────────────────────── */
+.tab-panel{display:none;padding:20px;padding-bottom:80px;}
+.tab-panel.active{display:block;animation:fadeUp 0.25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── COMMON ELEMENTS ─────────────────────────────────── */
+.sec-title{font-family:var(--fd);font-size:20px;font-weight:900;color:var(--text);margin-bottom:4px;}
+.sec-sub{font-size:12px;color:var(--text2);margin-bottom:16px;}
+.a-card{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.a-card-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;}
+.form-label{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:5px;}
+.form-row{margin-bottom:12px;}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;font-family:var(--fb);font-size:14px;color:var(--text);outline:none;transition:border-color 0.2s;}
+.form-input:focus{border-color:var(--gold);}
+.form-input::placeholder{color:var(--text3);}
+.photo-upload-area{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px;background:var(--bg3);border:1px dashed var(--border);border-radius:var(--r2);width:100%;}
+.photo-preview{width:100%;max-height:160px;object-fit:cover;border-radius:var(--r2);display:none;}
+.photo-upload-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--card2);border:1px solid var(--border);border-radius:var(--r2);font-size:13px;color:var(--text);cursor:pointer;font-family:var(--fb);}
+.photo-remove-btn{font-size:12px;color:var(--red2);background:none;border:none;cursor:pointer;padding:2px 0;font-family:var(--fb);}
+.btn{width:100%;padding:13px;border:none;border-radius:var(--r2);font-family:var(--fb);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;margin-top:4px;}
+.btn:active{transform:scale(0.98);opacity:0.9;}
+.btn-primary{background:var(--gold);color:var(--bg);}
+.btn-secondary{background:none;color:var(--gold);border:1px solid var(--border);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-sm{width:auto;padding:7px 14px;font-size:12px;margin-top:0;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border2);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-label{font-size:14px;color:var(--text);font-weight:500;}
+.toggle-sub{font-size:11px;color:var(--text2);margin-top:1px;}
+.toggle{position:relative;width:48px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--bg3);border-radius:13px;transition:background 0.2s;cursor:pointer;border:1px solid var(--border);}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--text2);border-radius:50%;transition:all 0.2s;}
+.toggle input:checked+.toggle-slider{background:var(--green);border-color:var(--green);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(22px);background:#fff;}
+.divider{height:1px;background:var(--border2);margin:12px 0;}
+.tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;}
+.tag-gold{background:rgba(200,152,42,0.15);color:var(--gold);border:1px solid var(--border);}
+.tag-green{background:rgba(31,173,90,0.15);color:var(--green);}
+.tag-red{background:rgba(192,57,43,0.15);color:var(--red2);}
+
+/* ── MENU TAB ────────────────────────────────────────── */
+.cat-header{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);padding:16px 0 8px;display:flex;align-items:center;gap:8px;}
+.cat-header::after{content:'';flex:1;height:1px;background:var(--border2);}
+.mir{background:var(--card);border:1px solid var(--border2);border-radius:var(--r2);padding:12px 14px;margin-bottom:4px;display:flex;align-items:center;gap:10px;}
+.mir.unavail{opacity:0.45;}
+.mir-emoji{font-size:20px;flex-shrink:0;}
+.mir-info{flex:1;min-width:0;}
+.mir-name{font-size:13px;font-weight:600;color:var(--text);}
+.mir-price{font-size:12px;color:var(--gold);font-weight:700;margin-top:1px;}
+.mir-desc{font-size:11px;color:var(--text2);}
+.mir-actions{display:flex;gap:5px;flex-shrink:0;}
+.mir-btn{padding:5px 9px;border-radius:8px;border:1px solid var(--border);background:none;font-size:11px;font-weight:700;font-family:var(--fb);cursor:pointer;transition:all 0.12s;color:var(--text2);}
+.mir-btn:active{background:var(--card2);}
+.mir-btn.avail{color:var(--red2);border-color:rgba(231,76,60,0.3);}
+.mir-btn.unavail{color:var(--green);border-color:rgba(31,173,90,0.3);}
+.mir-btn.edit{color:var(--gold);}
+.mir-btn.del{color:var(--red2);}
+.add-form{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:12px;display:none;}
+.add-form.open{display:block;}
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+
+/* category list */
+.cat-list-row{display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);margin-bottom:4px;}
+.cat-list-emoji{font-size:18px;flex-shrink:0;}
+.cat-list-name{flex:1;font-size:13px;font-weight:600;color:var(--text);}
+.cat-list-count{font-size:10px;color:var(--text3);flex-shrink:0;}
+.cat-list-actions{display:flex;gap:4px;flex-shrink:0;}
+
+/* size config (oz labels) */
+.size-config-row{display:grid;grid-template-columns:60px 1fr 90px;gap:6px;align-items:center;margin-bottom:6px;}
+.size-config-label{font-size:12px;font-weight:700;color:var(--text2);}
+
+/* addons editor */
+.addon-editor-row{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:10px;margin-bottom:6px;}
+.addon-editor-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.addon-editor-type{font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--gold);background:rgba(200,152,42,0.12);padding:2px 8px;border-radius:10px;}
+.addon-editor-del{background:none;border:none;color:var(--red2);font-size:13px;font-weight:700;cursor:pointer;margin-left:auto;padding:2px 6px;}
+.addon-fields{display:flex;flex-direction:column;gap:5px;}
+
+/* ── ORDERS TAB ──────────────────────────────────────── */
+.order-row{background:var(--card);border:1px solid var(--border2);border-radius:var(--r2);padding:12px 14px;margin-bottom:4px;}
+.order-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.order-name{font-size:13px;font-weight:700;color:var(--text);}
+.order-total{font-size:14px;font-weight:700;color:var(--gold);}
+.order-time{font-size:10px;color:var(--text2);margin-bottom:4px;}
+.order-items{font-size:11px;color:var(--text2);line-height:1.7;}
+
+/* ── AI STUDIO ───────────────────────────────────────── */
+.ai-header{background:linear-gradient(135deg,#1A1005,#0F0A05);border:1px solid rgba(200,152,42,0.25);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.ai-title{font-family:var(--fd);font-size:20px;color:var(--text);margin-bottom:4px;}
+.ai-sub{font-size:12px;color:var(--text2);line-height:1.6;}
+.restore-bar{background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.2);border-radius:var(--r2);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.restore-label{font-size:12px;color:var(--text2);}
+.restore-label strong{color:var(--text);display:block;font-size:13px;}
+
+/* ZIP upload */
+.zip-drop{border:2px dashed var(--border);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:12px;position:relative;}
+.zip-drop:hover,.zip-drop.drag{border-color:var(--gold);background:rgba(200,152,42,0.04);}
+.zip-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.zip-drop-icon{font-size:32px;margin-bottom:8px;}
+.zip-drop-text{font-size:13px;color:var(--text2);}
+.zip-drop-sub{font-size:11px;color:var(--text3);margin-top:4px;}
+
+/* Font panel */
+.font-preview{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:14px;margin-bottom:10px;}
+.font-preview-name{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:6px;}
+.font-preview-sample{font-size:22px;color:var(--text);margin-bottom:4px;}
+.font-preview-body{font-size:13px;color:var(--text2);}
+.font-targets{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+.font-target-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--border2);}
+.font-target-label{font-size:13px;color:var(--text);}
+.font-target-toggle{display:flex;gap:6px;}
+.font-choice{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:none;font-size:11px;font-weight:700;color:var(--text2);cursor:pointer;font-family:var(--fb);transition:all 0.15s;}
+.font-choice.active{background:var(--gold);color:var(--bg);border-color:var(--gold);}
+
+/* Color panel */
+.palette-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.swatch{width:40px;height:40px;border-radius:8px;border:2px solid transparent;cursor:pointer;transition:all 0.15s;position:relative;}
+.swatch.selected{border-color:var(--gold);transform:scale(1.1);}
+.swatch-label{font-size:9px;color:var(--text2);text-align:center;margin-top:3px;font-weight:600;}
+.swatch-wrap{display:flex;flex-direction:column;align-items:center;}
+.color-target-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg3);border-radius:var(--r2);border:1px solid var(--border2);margin-bottom:6px;}
+.color-target-label{font-size:13px;color:var(--text);}
+.color-target-right{display:flex;align-items:center;gap:8px;}
+.color-preview-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);}
+input[type=color]{width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0;background:none;}
+
+/* AI chat */
+.chat-wrap{background:var(--card);border:1px solid var(--border2);border-radius:var(--r);overflow:hidden;margin-bottom:12px;}
+.chat-history{padding:14px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.chat-history::-webkit-scrollbar{width:4px;}
+.chat-history::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.chat-msg{max-width:88%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;}
+.chat-msg.user{background:var(--gold);color:var(--bg);align-self:flex-end;border-radius:14px 14px 2px 14px;}
+.chat-msg.ai{background:var(--bg3);color:var(--text);align-self:flex-start;border-radius:14px 14px 14px 2px;border:1px solid var(--border2);}
+.chat-msg.system{background:none;color:var(--text3);font-size:11px;font-style:italic;align-self:center;text-align:center;}
+.chat-thinking{display:flex;gap:6px;padding:10px 13px;align-self:flex-start;}
+.chat-thinking span{width:7px;height:7px;border-radius:50%;background:var(--text3);animation:bounce 1.2s infinite;}
+.chat-thinking span:nth-child(2){animation-delay:0.2s;}
+.chat-thinking span:nth-child(3){animation-delay:0.4s;}
+@keyframes bounce{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-6px);}}
+.chat-progress{padding:10px 14px;font-size:12px;color:var(--gold);font-style:italic;border-top:1px solid var(--border2);min-height:36px;}
+.chat-input-row{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border2);background:var(--bg2);}
+.chat-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:10px 14px;font-family:var(--fb);font-size:13px;color:var(--text);outline:none;resize:none;height:40px;transition:border-color 0.2s;}
+.chat-input:focus{border-color:var(--gold);}
+.chat-input::placeholder{color:var(--text3);}
+.chat-send{width:40px;height:40px;background:var(--gold);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.chat-send:active{transform:scale(0.95);}
+.disclaimer-bar{background:rgba(200,152,42,0.07);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 12px;font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;}
+.disclaimer-bar strong{color:var(--text2);}
+.quick-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.chip{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer;transition:all 0.15s;font-family:var(--fb);}
+.chip:active{background:var(--card2);color:var(--text);}
+
+/* ── DEV TAB ─────────────────────────────────────────── */
+.dev-section{margin-bottom:20px;}
+.dev-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.dev-title::after{content:'';flex:1;height:1px;background:var(--border2);}
+.sysprompt-textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px;font-family:monospace;font-size:11px;color:var(--text);outline:none;resize:vertical;min-height:200px;line-height:1.6;transition:border-color 0.2s;}
+.sysprompt-textarea:focus{border-color:var(--gold);}
+.error-row{background:var(--card);border:1px solid rgba(192,57,43,0.2);border-radius:var(--r2);padding:10px 12px;margin-bottom:4px;}
+.error-row-time{font-size:10px;color:var(--text3);margin-bottom:3px;}
+.error-row-msg{font-size:12px;color:var(--red2);font-family:monospace;word-break:break-all;}
+.error-row-ctx{font-size:11px;color:var(--text2);margin-top:2px;}
+.api-key-row{display:flex;gap:8px;}
+.api-key-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;font-family:var(--fb);font-size:12px;color:var(--text);outline:none;}
+.api-key-input:focus{border-color:var(--gold);}
+.key-status{font-size:12px;font-style:italic;color:var(--text2);margin-top:6px;min-height:18px;}
+.key-status.ok{color:var(--green);}
+.key-status.err{color:var(--red2);}
+.model-select{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;font-family:var(--fb);font-size:12px;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;}
+.model-select:focus{border-color:var(--gold);}
+
+/* ── MODAL ───────────────────────────────────────────── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:800;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.modal-bg.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px 20px 40px;width:100%;max-height:88vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.25s cubic-bezier(0.32,0.72,0,1);}
+.modal-bg.open .modal{transform:translateY(0);}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;}
+.modal-title{font-family:var(--fd);font-size:18px;font-weight:900;color:var(--text);margin-bottom:14px;}
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text);z-index:900;transition:transform 0.3s;white-space:nowrap;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── ERROR OVERLAY ───────────────────────────────────── */
+.err-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;gap:16px;}
+.err-overlay.show{display:flex;}
+.err-icon{font-size:40px;}
+.err-title{font-family:var(--fd);font-size:22px;color:var(--text);}
+.err-msg{font-size:14px;color:var(--text2);line-height:1.7;max-width:280px;}
+.err-ok{padding:14px 32px;background:var(--gold);color:var(--bg);border:none;border-radius:var(--r2);font-family:var(--fb);font-size:15px;font-weight:700;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ERROR OVERLAY -->
+<div class="err-overlay" id="errOverlay">
+  <div class="err-icon">⚠️</div>
+  <div class="err-title">Something went wrong</div>
+  <div class="err-msg" id="errMsg">The panel ran into a problem. Close this panel, open it again, and try.</div>
+  <button class="err-ok" onclick="handleErrOk()">OK, Close Panel</button>
+</div>
+
+<!-- PIN SCREEN -->
+<div class="pin-screen" id="pinScreen">
+  <div class="pin-logo" id="pinLogo">Admin Panel</div>
+  <!-- First run: dev PIN setup -->
+  <div class="pin-first-run" id="firstRunSetup" style="display:none">
+    <div class="pin-first-run-title">⚙ First Time Setup — Developer</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6">Set your developer PIN. Keep this private — it unlocks AI Studio and system settings.</div>
+    <input class="pin-setup-input" id="devPinA" type="password" maxlength="4" placeholder="••••" inputmode="numeric">
+    <input class="pin-setup-input" id="devPinB" type="password" maxlength="4" placeholder="Confirm ••••" inputmode="numeric" style="margin-top:6px">
+    <div class="pin-error" id="firstRunError"></div>
+    <button class="pin-setup-btn" onclick="submitFirstRun()" style="margin-top:8px">Set Dev PIN & Continue</button>
+  </div>
+  <!-- Normal PIN entry -->
+  <div id="normalPin">
+    <div class="pin-subtitle" id="pinSubtitle">Enter your PIN to continue</div>
+    <div class="pin-display" id="pinDisplay">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key empty"></button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-error" id="pinError"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp">
+  <div class="topbar">
+    <div><div class="topbar-title" id="topbarTitle">Admin Panel</div><div class="topbar-role" id="roleLabel">Owner</div></div>
+    <button class="lock-btn" onclick="logout()">Lock</button>
+  </div>
+  <div class="tab-nav">
+    <div class="tab-btn active" onclick="showTab('store',this)">Store</div>
+    <div class="tab-btn" onclick="showTab('menu',this)">Menu</div>
+    <div class="tab-btn" onclick="showTab('orders',this)">Orders</div>
+    <div class="tab-btn" onclick="showTab('security',this)">Security</div>
+    <div class="tab-btn" onclick="showTab('studio',this)">AI Studio</div>
+    <div class="tab-btn hidden" id="devTabBtn" onclick="showTab('dev',this)">Dev ⚙</div>
+  </div>
+
+  <!-- STORE TAB -->
+  <div class="tab-panel active" id="tab-store">
+    <div class="sec-title">Store</div>
+    <div class="sec-sub">Live settings — changes go live immediately</div>
+    <div class="a-card">
+      <div class="a-card-title">Live Status</div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Store is Open</div><div class="toggle-sub">Customers see Open / Closed indicator</div></div>
+        <label class="toggle"><input type="checkbox" id="togOpen" onchange="saveStoreField('isOpen',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="a-card">
+      <div class="a-card-title">Store Info</div>
+      <div class="form-row"><label class="form-label">Store Name</label><input class="form-input" id="iName" placeholder="My Coffee Shop"></div>
+      <div class="form-row"><label class="form-label">Slogan</label><input class="form-input" id="iSlogan" placeholder="Medium Dark Roast · 100% Arabica"></div>
+      <div class="form-row"><label class="form-label">Opening Hours</label><input class="form-input" id="iHours" placeholder="8:00 AM – 10:00 PM daily"></div>
+      <div class="form-row"><label class="form-label">WhatsApp Number</label><input class="form-input" id="iPhone" placeholder="Country code + number, digits only" inputmode="numeric"></div>
+      <div class="form-row"><label class="form-label">Logo URL (optional)</label><input class="form-input" id="iLogo" placeholder="https://..."></div>
+      <button class="btn btn-primary" onclick="saveStore()">Save Store Info</button>
+    </div>
+    <div class="a-card">
+      <div class="a-card-title">Size Legend</div>
+      <div class="sec-sub" style="margin-bottom:12px">Labels shown as chips on Coffee &amp; Non-Coffee sections</div>
+      <div class="form-row"><label class="form-label">Chip 1</label><input class="form-input" id="iSize1" placeholder="e.g. HOT 8oz"></div>
+      <div class="form-row"><label class="form-label">Chip 2</label><input class="form-input" id="iSize2" placeholder="e.g. COLD 12oz"></div>
+      <div class="form-row"><label class="form-label">Chip 3</label><input class="form-input" id="iSize3" placeholder="e.g. FRAPPÉ 16oz"></div>
+      <div class="form-row"><label class="form-label">Chip 4</label><input class="form-input" id="iSize4" placeholder="e.g. LARGE +RM4"></div>
+      <button class="btn btn-primary" onclick="saveSizeLegend()">Save Size Legend</button>
+    </div>
+  </div>
+
+  <!-- MENU TAB -->
+  <div class="tab-panel" id="tab-menu">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sec-title">Menu</div>
+      <button class="btn btn-secondary btn-sm" onclick="toggleAddForm()">+ Add Item</button>
+    </div>
+    <div class="sec-sub">Tap Sold Out to hide an item from customers</div>
+    <div class="add-form" id="addForm">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px">New Item</div>
+      <div class="form-row"><label class="form-label">Category</label>
+        <select class="form-input" id="nCat"></select></div>
+      <div class="form-row"><label class="form-label">Name</label><input class="form-input" id="nName" placeholder="Item name"></div>
+      <div class="form-row"><label class="form-label">Description (optional)</label><input class="form-input" id="nDesc" placeholder="e.g. Spicy, Club sandwich..."></div>
+      <div class="form-row"><label class="form-label">Emoji</label><input class="form-input" id="nEmoji" placeholder="☕" maxlength="2"></div>
+      <div class="form-row">
+        <label class="form-label">Photo (optional — JPG/PNG, auto-resized)</label>
+        <div class="photo-upload-area">
+          <img id="nImgPreview" class="photo-preview">
+          <input type="hidden" id="nImg">
+          <label class="photo-upload-btn">📷 Choose Photo<input type="file" accept="image/jpeg,image/png" style="display:none" onchange="handlePhotoUpload(this,'nImgPreview','nImg')"></label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-label" style="margin-bottom:8px">Drink Sizes (leave Price blank to hide that size)</div>
+        <div class="size-config-row"><span class="size-config-label">🔥 Hot</span><input class="form-input" id="nHot" type="number" step="0.5" data-cur-placeholder="Price (CUR)"><input class="form-input" id="nHotOz" placeholder="e.g. 8oz"></div>
+        <div class="size-config-row"><span class="size-config-label">❄️ Cold</span><input class="form-input" id="nCold" type="number" step="0.5" data-cur-placeholder="Price (CUR)"><input class="form-input" id="nColdOz" placeholder="e.g. 12oz"></div>
+        <div class="size-config-row"><span class="size-config-label">🧋 Frappé</span><input class="form-input" id="nFrappe" type="number" step="0.5" data-cur-placeholder="Price (CUR)"><input class="form-input" id="nFrappeOz" placeholder="e.g. 16oz"></div>
+      </div>
+      <div class="form-row"><label class="form-label" data-cur-label="Fixed Price — Food (CUR)">Fixed Price — Food (RM)</label><input class="form-input" id="nPrice" type="number" step="0.5" placeholder="Leave blank for drinks"></div>
+      <button class="btn btn-primary" onclick="addItem()">Add Item</button>
+      <button class="btn btn-secondary" onclick="toggleAddForm()" style="margin-top:8px">Cancel</button>
+    </div>
+    <!-- CATEGORIES -->
+    <div class="a-card" style="margin-bottom:14px">
+      <div class="a-card-title">Categories</div>
+      <div id="catList"></div>
+      <div id="editCatForm" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px" id="editCatFormTitle">Edit Category</div>
+        <div style="display:grid;grid-template-columns:60px 1fr;gap:8px;margin-bottom:8px">
+          <div><label class="form-label">Emoji</label><input class="form-input" id="eCatEmoji" placeholder="☕" maxlength="2"></div>
+          <div><label class="form-label">Label</label><input class="form-input" id="eCatLabel" placeholder="Category name"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="saveCatEdit()">Save</button>
+          <button class="btn btn-secondary btn-sm" onclick="closeEditCatForm()">Cancel</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-secondary btn-sm" onclick="openAddCatForm()">+ Add Category</button>
+      </div>
+      <div id="addCatForm" style="display:none;margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">New Category</div>
+        <div style="display:grid;grid-template-columns:60px 1fr;gap:8px;margin-bottom:8px">
+          <div><label class="form-label">Emoji</label><input class="form-input" id="newCatEmoji" placeholder="☕" maxlength="2"></div>
+          <div><label class="form-label">Name</label><input class="form-input" id="newCatLabel" placeholder="Category name"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="saveNewCat()">Add</button>
+          <button class="btn btn-secondary btn-sm" onclick="closeAddCatForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="menuList"></div>
+  </div>
+
+  <!-- ORDERS TAB -->
+  <div class="tab-panel" id="tab-orders">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sec-title">Orders</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadOrders()">↻ Refresh</button>
+    </div>
+    <div class="sec-sub">Latest 1000 stored — oldest overwritten automatically</div>
+    <div id="ordersList"><div style="color:var(--text2);font-size:13px;padding:20px 0">Loading...</div></div>
+  </div>
+
+  <!-- SECURITY TAB -->
+  <div class="tab-panel" id="tab-security">
+    <div class="sec-title">Security</div>
+    <div class="sec-sub">Change PINs here</div>
+    <div class="a-card">
+      <div class="a-card-title">Owner PIN — 4 digits</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">This is the PIN for daily use. Default is <strong style="color:var(--text)">1234</strong> — change it now.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">New PIN</label><input class="form-input" id="ownerPinA" type="password" maxlength="4" placeholder="••••" inputmode="numeric"></div>
+        <div><label class="form-label">Confirm</label><input class="form-input" id="ownerPinB" type="password" maxlength="4" placeholder="••••" inputmode="numeric"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveOwnerPin()" style="margin-top:10px">Update Owner PIN</button>
+    </div>
+    <div class="a-card" id="devPinCard" style="display:none">
+      <div class="a-card-title">Developer PIN — 4 digits</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">Your personal PIN. Unlocks AI Studio, Dev tab, and system prompt editor. Keep private.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">New PIN</label><input class="form-input" id="devPinA2" type="password" maxlength="4" placeholder="••••" inputmode="numeric"></div>
+        <div><label class="form-label">Confirm</label><input class="form-input" id="devPinB2" type="password" maxlength="4" placeholder="••••" inputmode="numeric"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveDevPin()" style="margin-top:10px">Update Dev PIN</button>
+    </div>
+  </div>
+
+  <!-- AI STUDIO TAB -->
+  <div class="tab-panel" id="tab-studio">
+    <div class="ai-header">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div class="tag tag-gold">✦ AI Studio</div>
+        <div style="font-size:11px;color:var(--text3)" id="studioKeyStatus"></div>
+      </div>
+      <div class="ai-title">Customize Your Menu</div>
+      <div class="ai-sub">Upload a ZIP from any template site to pick fonts and colors. Or just tell Gemini what you want changed.</div>
+    </div>
+
+    <!-- Restore bar -->
+    <div class="restore-bar" id="restoreBar" style="display:none">
+      <div class="restore-label"><strong>Last saved theme available</strong>Tap to restore if something doesn't look right</div>
+      <button class="btn btn-danger btn-sm" onclick="restoreLastSaved()">Restore</button>
+    </div>
+
+    <!-- Master restore (dev only) -->
+    <div class="restore-bar" id="masterRestoreBar" style="display:none;border-color:rgba(200,152,42,0.3);background:rgba(200,152,42,0.07)">
+      <div class="restore-label"><strong style="color:var(--gold)">Master copy available</strong><span style="color:var(--text3)">Full factory reset — restores original design</span></div>
+      <button class="btn btn-secondary btn-sm" onclick="restoreMaster()">Factory Reset</button>
+    </div>
+
+    <!-- ZIP UPLOAD -->
+    <div class="a-card">
+      <div class="a-card-title">Template Ingredients</div>
+      <div class="zip-drop" id="zipDrop">
+        <input type="file" accept=".zip" onchange="handleZip(this.files[0])">
+        <div class="zip-drop-icon">📦</div>
+        <div class="zip-drop-text">Upload template ZIP</div>
+        <div class="zip-drop-sub">Download any free HTML template, upload the ZIP here</div>
+      </div>
+      <div id="zipStatus" style="font-size:12px;color:var(--text2);margin-bottom:10px;font-style:italic;display:none"></div>
+
+      <!-- FONT PANEL -->
+      <div id="fontPanel" style="display:none">
+        <div class="a-card-title" style="margin-top:4px">Fonts from Template</div>
+        <div id="fontPreviewWrap"></div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Choose which text elements use the template font:</div>
+        <div class="font-targets" id="fontTargets"></div>
+        <button class="btn btn-primary" onclick="applyFonts()" style="margin-top:12px">Apply Font Changes</button>
+      </div>
+
+      <!-- COLOR PANEL -->
+      <div id="colorPanel" style="display:none">
+        <div class="divider"></div>
+        <div class="a-card-title">Colors from Template</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Extracted palette — tap a swatch or use the color picker:</div>
+        <div class="palette-grid" id="paletteGrid"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px">Apply to:</div>
+        <div id="colorTargets"></div>
+        <button class="btn btn-primary" onclick="applyColors()" style="margin-top:4px">Apply Color Changes</button>
+      </div>
+    </div>
+
+    <!-- AI CHAT -->
+    <div class="a-card" style="padding:0;overflow:hidden">
+      <div style="padding:14px 14px 10px;border-bottom:1px solid var(--border2)">
+        <div class="a-card-title" style="margin-bottom:6px">Talk to Gemini</div>
+        <div class="quick-chips" id="quickChips"></div>
+      </div>
+      <div class="chat-history" id="chatHistory"></div>
+      <div class="chat-progress" id="chatProgress" style="display:none"></div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="Tell me what to change..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+          oninput="this.style.height='40px';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button class="chat-send" onclick="sendChat()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="disclaimer-bar">
+      <strong>Note:</strong> Gemini works best for minor tweaks. For bigger changes, use the font and color panels above. Changes go live when you reload <em>index.html</em>. Your last save is always restorable using the button above.
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="studioSaveAndContinue()">Save & Continue</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="studioSaveAndExit()">Save & Exit</button>
+    </div>
+  </div>
+
+  <!-- DEV TAB (dev PIN only) -->
+  <div class="tab-panel" id="tab-dev">
+    <div class="sec-title">Developer</div>
+    <div class="sec-sub">Visible to developer only</div>
+
+    <div class="dev-section">
+      <div class="dev-title">OpenRouter API Key</div>
+      <div class="a-card">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">Stored in Firebase. Subject to hard cap set on OpenRouter dashboard.</div>
+        <div class="api-key-row">
+          <input class="api-key-input" id="orKey" type="password" placeholder="sk-or-v1-...">
+          <button class="btn btn-secondary btn-sm" onclick="testKey()">Test</button>
+        </div>
+        <div class="key-status" id="keyStatus"></div>
+        <button class="btn btn-primary" onclick="saveKey()" style="margin-top:10px">Save Key</button>
+      </div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-title">AI Model</div>
+      <div class="a-card">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">Fetches free models live from OpenRouter. Save API key first, then tap Fetch.</div>
+        <div class="api-key-row">
+          <select class="model-select" id="modelSelect">
+            <option value="">— tap Fetch to load models —</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="fetchModels()">Fetch</button>
+        </div>
+        <div class="key-status" id="modelStatus"></div>
+        <button class="btn btn-primary" onclick="saveModel()" style="margin-top:10px">Save Model</button>
+      </div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-title">System Prompt</div>
+      <div class="a-card">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">Injected before every Gemini request. Edit to fine-tune behaviour, persona, and ambiguity rules.</div>
+        <textarea class="sysprompt-textarea" id="sysPromptInput"></textarea>
+        <button class="btn btn-primary" onclick="saveSysPrompt()" style="margin-top:10px">Save System Prompt</button>
+      </div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-title">Master Snapshot</div>
+      <div class="a-card">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">Take a master snapshot of current theme. This becomes the factory reset point. Cannot be overwritten except from this panel.</div>
+        <button class="btn btn-primary" onclick="takeMasterSnapshot()">📸 Take Master Snapshot Now</button>
+      </div>
+    </div>
+
+    <div class="dev-section">
+      <div class="dev-title">Error Log</div>
+      <div id="errorLog"><div style="color:var(--text2);font-size:13px">Loading...</div></div>
+    </div>
+  </div>
+
+</div><!-- end app -->
+
+<!-- EDIT ITEM MODAL -->
+<div class="modal-bg" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="editModalTitle">Edit Item</div>
+    <div id="editModalBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// FIREBASE CONFIG  (values come from config.js)
+// ════════════════════════════════════════════════════════════
+const FB_URL  = APP_CONFIG.firebase.url;
+const FB_ROOT = APP_CONFIG.firebase.root;
+const CUR     = APP_CONFIG.store.currency;
+
+// ════════════════════════════════════════════════════════════
+// ERROR BOUNDARY — belt and suspenders
+// ════════════════════════════════════════════════════════════
+window.onerror = (msg, src, line, col, err) => {
+  logError({ type:'window.onerror', msg, src, line, col, stack: err?.stack });
+  showErrOverlay();
+};
+window.addEventListener('unhandledrejection', e => {
+  logError({ type:'unhandledrejection', msg: e.reason?.message || String(e.reason), stack: e.reason?.stack });
+  // Don't show overlay for every promise rejection — only critical ones
+});
+
+async function logError(data) {
+  try {
+    const key = 'err_' + Date.now();
+    const payload = { ...data, ts: Date.now(), ua: navigator.userAgent };
+    await fetch(`${FB_URL}/${FB_ROOT}/error_log/${key}.json`, {
+      method: 'PUT', body: JSON.stringify(payload)
+    });
+  } catch {} // silent — if this fails, nothing we can do
+}
+
+function showErrOverlay(msg) {
+  if (msg) document.getElementById('errMsg').textContent = msg;
+  document.getElementById('errOverlay').classList.add('show');
+}
+
+function handleErrOk() {
+  try { window.close(); } catch {}
+  document.getElementById('errOverlay').classList.remove('show');
+}
+
+// Safe async wrapper
+async function safe(fn, ctx) {
+  try { return await fn(); }
+  catch(e) {
+    logError({ type:'safe_catch', ctx: ctx||'unknown', msg: e.message, stack: e.stack });
+    const msg = e.message === 'timeout' ? 'Request timed out. Check your connection.'
+              : e.message === 'Failed to fetch' ? 'Network error. Check your connection.'
+              : e.message || 'Something went wrong.';
+    toast(msg);
+    return null;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// FIREBASE HELPERS
+// ════════════════════════════════════════════════════════════
+function fetchWithTimeout(url, optsOrMs, ms) {
+  let opts = {}, timeout;
+  if (typeof optsOrMs === 'number') {
+    timeout = optsOrMs;
+  } else if (optsOrMs && typeof optsOrMs === 'object') {
+    opts = optsOrMs; timeout = ms || 5000;
+  } else {
+    timeout = 5000;
+  }
+  return Promise.race([
+    fetch(url, opts),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout))
+  ]);
+}
+
+async function fbGet(path) {
+  try {
+    const r = await fetchWithTimeout(`${FB_URL}/${FB_ROOT}/${path}.json`);
+    return await r.json();
+  } catch { return null; }
+}
+async function fbSet(path, data) {
+  await fetch(`${FB_URL}/${FB_ROOT}/${path}.json`, { method:'PUT', body:JSON.stringify(data) });
+}
+async function fbDelete(path) {
+  await fetch(`${FB_URL}/${FB_ROOT}/${path}.json`, { method:'DELETE' });
+}
+
+// ════════════════════════════════════════════════════════════
+// DEFAULT DATA
+// ════════════════════════════════════════════════════════════
+const DEFAULT_THEME = APP_CONFIG.defaultTheme;
+
+const DEFAULT_SYS_PROMPT = APP_CONFIG.ai.systemPrompt;
+
+const FONT_TARGETS = [
+  { id:'store_heading',   label:'Store Name + Section Headings',   cssVar:'--font-display' },
+  { id:'slogan_group',    label:'Slogan · Hours · WhatsApp info',  cssVar:'--font-body'    },
+  { id:'nav_tabs',        label:'Navigation Tabs',                  cssVar:'--font-body'    },
+  { id:'item_names',      label:'Menu Item Names',                  cssVar:'--font-body'    },
+  { id:'size_labels',     label:'Hot · Cold · Frappé labels',      cssVar:'--font-body'    },
+  { id:'prices',          label:'Prices',                           cssVar:'--font-body'    },
+];
+
+const COLOR_TARGETS = [
+  { id:'banner',    label:'Open/Closed Banner',    fbKey:'accent'   },
+  { id:'bg',        label:'Page Background',        fbKey:'bg'       },
+  { id:'surface',   label:'Card Background',        fbKey:'surface'  },
+  { id:'nav_active',label:'Active Nav Tab',         fbKey:'accent'   },
+  { id:'item_name', label:'Item Names',             fbKey:'text'     },
+  { id:'prices',    label:'Prices',                 fbKey:'accent'   },
+  { id:'primary',   label:'Headings & Logo',        fbKey:'primary'  },
+];
+
+const QUICK_CHIPS = APP_CONFIG.ai.quickChips;
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+let pins          = { owner:'1234', dev:'' };
+let currentRole   = null;
+let menuItems     = [];
+let menuCats      = [];
+let storeData     = {};
+let chatHistory   = [];   // { role, content, ts }
+let orModel       = APP_CONFIG.ai.model; // active model, updated from Firebase
+let extractedFonts  = null;
+let extractedPalette = [];
+let fontChoices   = {};   // { targetId: 'current' | 'template' }
+let colorChoices  = {};   // { targetId: hex }
+let currentTheme  = {};
+let lastSavedTheme = null;
+let editingId     = null;
+let toastTimer    = null;
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+async function init() {
+  // Apply branding from config.js
+  document.title = APP_CONFIG.brand.adminName;
+  document.getElementById('pinLogo').textContent   = APP_CONFIG.brand.adminName;
+  document.getElementById('topbarTitle').textContent = APP_CONFIG.brand.adminName;
+  // Update currency labels in add-item form
+  document.querySelectorAll('[data-cur-label]').forEach(el => {
+    el.textContent = el.getAttribute('data-cur-label').replace('CUR', CUR);
+  });
+  document.querySelectorAll('[data-cur-placeholder]').forEach(el => {
+    el.placeholder = el.getAttribute('data-cur-placeholder').replace('CUR', CUR);
+  });
+
+  await safe(async () => {
+    const p = await fbGet('config/pins');
+    if (p) { if(p.owner) pins.owner = p.owner; if(p.dev) pins.dev = p.dev; }
+
+    // First run: dev PIN not set
+    if (!pins.dev) {
+      document.getElementById('firstRunSetup').style.display = 'block';
+      document.getElementById('normalPin').style.display = 'none';
+      return;
+    }
+
+    // Seed defaults if needed
+    const th = await fbGet('config/theme');
+    if (!th) await fbSet('config/theme', DEFAULT_THEME);
+    currentTheme = th || { ...DEFAULT_THEME };
+
+    const sp = await fbGet('config/dev/sys_prompt');
+    if (!sp) await fbSet('config/dev/sys_prompt', DEFAULT_SYS_PROMPT);
+
+    // Check if last-saved exists
+    const ls = await fbGet('config/theme_last_saved');
+    if (ls) lastSavedTheme = ls;
+
+  }, 'init');
+}
+
+// ════════════════════════════════════════════════════════════
+// FIRST RUN — set dev PIN
+// ════════════════════════════════════════════════════════════
+async function submitFirstRun() {
+  const a = document.getElementById('devPinA').value.trim();
+  const b = document.getElementById('devPinB').value.trim();
+  const err = document.getElementById('firstRunError');
+  if (!/^\d{4}$/.test(a)) { err.textContent = 'PIN must be exactly 4 digits'; return; }
+  if (a !== b) { err.textContent = 'PINs do not match'; return; }
+  await safe(async () => {
+    pins.dev = a;
+    await fbSet('config/pins', pins);
+    // Take master snapshot of default theme
+    await fbSet('config/theme_master', DEFAULT_THEME);
+    await fbSet('config/theme', DEFAULT_THEME);
+    currentTheme = { ...DEFAULT_THEME };
+    await fbSet('config/dev/sys_prompt', DEFAULT_SYS_PROMPT);
+    document.getElementById('firstRunSetup').style.display = 'none';
+    document.getElementById('normalPin').style.display = 'block';
+    toast('Dev PIN set. Now enter it to log in.');
+  }, 'firstRun');
+}
+
+// ════════════════════════════════════════════════════════════
+// PIN SYSTEM
+// ════════════════════════════════════════════════════════════
+let pinBuf = '';
+
+function pinKey(k) {
+  if (pinBuf.length >= 4) return;
+  pinBuf += k;
+  updateDots();
+  if (pinBuf.length === 4) setTimeout(checkPin, 150);
+}
+function pinDel() { pinBuf = pinBuf.slice(0,-1); updateDots(); }
+function updateDots() {
+  for (let i=0;i<4;i++) document.getElementById('d'+i).classList.toggle('filled', i < pinBuf.length);
+}
+function checkPin() {
+  if      (pinBuf === pins.dev)   { currentRole='dev';   unlockApp(); }
+  else if (pinBuf === pins.owner) { currentRole='owner'; unlockApp(); }
+  else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN. Try again.';
+    pinBuf = ''; updateDots();
+    setTimeout(() => document.getElementById('pinError').textContent = '', 2000);
+  }
+}
+
+async function unlockApp() {
+  document.getElementById('pinScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.add('visible');
+  document.getElementById('roleLabel').textContent = currentRole === 'dev' ? 'Developer' : 'Owner';
+  if (currentRole === 'dev') {
+    document.getElementById('devTabBtn').classList.remove('hidden');
+    document.getElementById('devPinCard').style.display = 'block';
+  }
+  await safe(loadAll, 'unlockApp');
+}
+
+function logout() {
+  currentRole = null; pinBuf = ''; updateDots();
+  document.getElementById('pinError').textContent = '';
+  document.getElementById('mainApp').classList.remove('visible');
+  document.getElementById('pinScreen').classList.remove('hidden');
+  chatHistory = [];
+}
+
+// ════════════════════════════════════════════════════════════
+// LOAD ALL DATA
+// ════════════════════════════════════════════════════════════
+async function loadAll() {
+  await loadStoreTab();
+  await loadMenuData();
+  await loadOrders();
+  await loadStudioTab();
+  if (currentRole === 'dev') await loadDevTab();
+}
+
+// ════════════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════════════
+function showTab(id, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════════
+// STORE TAB
+// ════════════════════════════════════════════════════════════
+async function loadStoreTab() {
+  const s = await safe(() => fbGet('config/store'), 'loadStore');
+  storeData = s || {};
+  document.getElementById('iName').value   = storeData.name    || APP_CONFIG.store.name;
+  document.getElementById('iSlogan').value = storeData.slogan  || '';
+  document.getElementById('iHours').value  = storeData.hours   || '';
+  document.getElementById('iPhone').value  = storeData.phone   || APP_CONFIG.store.phone;
+  document.getElementById('iLogo').value   = storeData.logo_url|| '';
+  document.getElementById('togOpen').checked = storeData.isOpen !== false;
+  const legend = storeData.sizeLegend || APP_CONFIG.store.sizeLegend;
+  document.getElementById('iSize1').value = legend[0] || '';
+  document.getElementById('iSize2').value = legend[1] || '';
+  document.getElementById('iSize3').value = legend[2] || '';
+  document.getElementById('iSize4').value = legend[3] || '';
+}
+async function saveStore() {
+  await safe(async () => {
+    const legend = [
+      document.getElementById('iSize1').value.trim(),
+      document.getElementById('iSize2').value.trim(),
+      document.getElementById('iSize3').value.trim(),
+      document.getElementById('iSize4').value.trim(),
+    ].filter(Boolean);
+    const d = {
+      name:       document.getElementById('iName').value.trim(),
+      slogan:     document.getElementById('iSlogan').value.trim(),
+      hours:      document.getElementById('iHours').value.trim(),
+      phone:      document.getElementById('iPhone').value.trim(),
+      logo_url:   document.getElementById('iLogo').value.trim(),
+      isOpen:     document.getElementById('togOpen').checked,
+      sizeLegend: legend.length ? legend : APP_CONFIG.store.sizeLegend,
+    };
+    await fbSet('config/store', d);
+    toast('Store info saved ✓');
+  }, 'saveStore');
+}
+async function saveSizeLegend() {
+  await safe(async () => {
+    const legend = [
+      document.getElementById('iSize1').value.trim(),
+      document.getElementById('iSize2').value.trim(),
+      document.getElementById('iSize3').value.trim(),
+      document.getElementById('iSize4').value.trim(),
+    ].filter(Boolean);
+    const s = await fbGet('config/store') || {};
+    s.sizeLegend = legend.length ? legend : APP_CONFIG.store.sizeLegend;
+    await fbSet('config/store', s);
+    toast('Size legend saved ✓');
+  }, 'saveSizeLegend');
+}
+async function saveStoreField(field, val) {
+  await safe(async () => {
+    const s = await fbGet('config/store') || {};
+    s[field] = val;
+    await fbSet('config/store', s);
+    toast(field==='isOpen' ? (val?'Marked OPEN ✓':'Marked CLOSED ✓') : 'Saved ✓');
+  }, 'saveStoreField');
+}
+
+// ════════════════════════════════════════════════════════════
+// MENU TAB
+// ════════════════════════════════════════════════════════════
+async function loadMenuData() {
+  await safe(async () => {
+    const snap = await fbGet('menu/items');
+    menuItems = snap ? Object.values(snap) : [];
+    const cats = await fbGet('menu/categories');
+    menuCats  = cats ? Object.values(cats) : APP_CONFIG.defaultMenu.categories;
+    renderCatList();
+    updateCatDropdown();
+    renderMenuList();
+  }, 'loadMenu');
+}
+
+function renderMenuList() {
+  const el = document.getElementById('menuList');
+  el.innerHTML = '';
+  menuCats.forEach(cat => {
+    const items = menuItems.filter(i => i.cat === cat.id);
+    if (!items.length) return;
+    const h = document.createElement('div');
+    h.className = 'cat-header';
+    h.textContent = `${cat.emoji} ${cat.label}`;
+    el.appendChild(h);
+    items.forEach(item => el.appendChild(makeMIR(item)));
+  });
+}
+
+function makeMIR(item) {
+  const isDrink = item.hot!=null||item.cold!=null||item.frappe!=null;
+  let price = isDrink
+    ? [item.hot&&`H:${CUR}${item.hot}`,item.cold&&`C:${CUR}${item.cold}`,item.frappe&&`F:${CUR}${item.frappe}`].filter(Boolean).join(' · ')
+    : `${CUR} ${Number(item.price).toFixed(2)}`;
+  const d = document.createElement('div');
+  d.className = 'mir'+(item.avail===false?' unavail':'');
+  d.id = 'mir-'+item.id;
+  d.innerHTML = `
+    <div class="mir-emoji">${item.emoji||'🍽️'}</div>
+    <div class="mir-info">
+      <div class="mir-name">${item.name}</div>
+      <div class="mir-price">${price}</div>
+      ${item.desc?`<div class="mir-desc">${item.desc}</div>`:''}
+    </div>
+    <div class="mir-actions">
+      <button class="mir-btn ${item.avail===false?'unavail':'avail'}" onclick="toggleAvail('${item.id}')">
+        ${item.avail===false?'Enable':'Sold Out'}
+      </button>
+      <button class="mir-btn edit" onclick="openEditModal('${item.id}')">Edit</button>
+      <button class="mir-btn del" onclick="deleteItem('${item.id}')">Del</button>
+    </div>`;
+  return d;
+}
+
+async function toggleAvail(id) {
+  await safe(async () => {
+    const item = menuItems.find(i=>i.id===id);
+    if (!item) return;
+    item.avail = item.avail===false;
+    await fbSet('menu/items/'+id, item);
+    renderMenuList();
+    toast(item.avail ? `${item.name} — available ✓` : `${item.name} — sold out`);
+  }, 'toggleAvail');
+}
+
+async function deleteItem(id) {
+  if (!confirm('Delete this item?')) return;
+  await safe(async () => {
+    await fbDelete('menu/items/'+id);
+    menuItems = menuItems.filter(i=>i.id!==id);
+    renderMenuList();
+    toast('Item deleted');
+  }, 'deleteItem');
+}
+
+function toggleAddForm() { document.getElementById('addForm').classList.toggle('open'); }
+
+async function addItem() {
+  await safe(async () => {
+    const name = document.getElementById('nName').value.trim();
+    if (!name) { toast('Name is required'); return; }
+    const id   = 'item_'+Date.now();
+    const item = {
+      id, name,
+      cat:       document.getElementById('nCat').value,
+      desc:      document.getElementById('nDesc').value.trim(),
+      emoji:     document.getElementById('nEmoji').value.trim()||'🍽️',
+      img_url:   document.getElementById('nImg').value.trim(),
+      hot:       parseFloat(document.getElementById('nHot').value)||null,
+      hot_oz:    document.getElementById('nHotOz').value.trim()||null,
+      cold:      parseFloat(document.getElementById('nCold').value)||null,
+      cold_oz:   document.getElementById('nColdOz').value.trim()||null,
+      frappe:    parseFloat(document.getElementById('nFrappe').value)||null,
+      frappe_oz: document.getElementById('nFrappeOz').value.trim()||null,
+      price:     parseFloat(document.getElementById('nPrice').value)||null,
+      addons:    [],
+      avail:     true
+    };
+    await fbSet('menu/items/'+id, item);
+    menuItems.push(item);
+    renderMenuList();
+    toggleAddForm();
+    ['nName','nDesc','nEmoji','nImg','nHot','nHotOz','nCold','nColdOz','nFrappe','nFrappeOz','nPrice'].forEach(i=>document.getElementById(i).value='');
+    const np = document.getElementById('nImgPreview'); np.src=''; np.style.display='none';
+    toast('Item added ✓');
+  }, 'addItem');
+}
+
+function openEditModal(id) {
+  editingId = id;
+  const item = menuItems.find(i=>i.id===id);
+  if (!item) return;
+  const isDrink = item.hot!=null||item.cold!=null||item.frappe!=null;
+  document.getElementById('editModalTitle').textContent = 'Edit: '+item.name;
+  document.getElementById('editModalBody').innerHTML = `
+    <div class="form-row"><label class="form-label">Name</label><input class="form-input" id="eName" value="${item.name}"></div>
+    <div class="form-row"><label class="form-label">Description</label><input class="form-input" id="eDesc" value="${item.desc||''}"></div>
+    <div class="form-row"><label class="form-label">Emoji</label><input class="form-input" id="eEmoji" value="${item.emoji||'🍽️'}" maxlength="2"></div>
+    <div class="form-row">
+      <label class="form-label">Photo (JPG/PNG, auto-resized to 500px)</label>
+      <div class="photo-upload-area">
+        <img id="eImgPreview" class="photo-preview" src="${item.img_url||''}" style="${item.img_url?'display:block':'display:none'}">
+        <input type="hidden" id="eImg" value="${item.img_url||''}">
+        <label class="photo-upload-btn">📷 ${item.img_url?'Change Photo':'Upload Photo'}<input type="file" accept="image/jpeg,image/png" style="display:none" onchange="handlePhotoUpload(this,'eImgPreview','eImg')"></label>
+        ${item.img_url?`<button class="photo-remove-btn" onclick="removeItemPhoto('eImgPreview','eImg')">✕ Remove photo</button>`:''}
+      </div>
+    </div>
+    ${isDrink?`
+    <div class="form-row">
+      <div class="form-label" style="margin-bottom:8px">Drink Sizes (leave Price blank to hide that size)</div>
+      <div class="size-config-row"><span class="size-config-label">🔥 Hot</span><input class="form-input" id="eHot" type="number" step="0.5" placeholder="Price" value="${item.hot??''}"><input class="form-input" id="eHotOz" placeholder="e.g. 8oz" value="${item.hot_oz||''}"></div>
+      <div class="size-config-row"><span class="size-config-label">❄️ Cold</span><input class="form-input" id="eCold" type="number" step="0.5" placeholder="Price" value="${item.cold??''}"><input class="form-input" id="eColdOz" placeholder="e.g. 12oz" value="${item.cold_oz||''}"></div>
+      <div class="size-config-row"><span class="size-config-label">🧋 Frappé</span><input class="form-input" id="eFrappe" type="number" step="0.5" placeholder="Price" value="${item.frappe??''}"><input class="form-input" id="eFrappeOz" placeholder="e.g. 16oz" value="${item.frappe_oz||''}"></div>
+    </div>`:`<div class="form-row"><label class="form-label">Price (${CUR})</label><input class="form-input" id="ePrice" type="number" step="0.5" value="${item.price??''}"></div>`}
+    <div class="form-row" style="margin-top:4px">
+      <div class="a-card-title">Options / Add-ons</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Choice = required selection (e.g. sauce type). Optional = checkbox with extra price.</div>
+      <div id="addonsEditor"></div>
+      <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="addAddonField('select')">+ Choice (e.g. sauce)</button>
+        <button class="btn btn-secondary btn-sm" onclick="addAddonField('toggle')">+ Optional (+price)</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    <button class="btn btn-secondary" onclick="closeEditModal()" style="margin-top:8px">Cancel</button>`;
+  renderAddonsEditor(item.addons || []);
+  document.getElementById('editModal').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+// PHOTO UPLOAD
+// ════════════════════════════════════════════════════════════
+function resizeImageToDataURL(file, maxPx, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxPx || h > maxPx) {
+          if (w >= h) { h = Math.round(h * maxPx / w); w = maxPx; }
+          else        { w = Math.round(w * maxPx / h); h = maxPx; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhotoUpload(input, previewId, hiddenId) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!['image/jpeg','image/png'].includes(file.type)) {
+    toast('JPG or PNG only'); input.value = ''; return;
+  }
+  toast('Resizing image...');
+  try {
+    const dataUrl = await resizeImageToDataURL(file, 500, 0.72);
+    const preview = document.getElementById(previewId);
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    document.getElementById(hiddenId).value = dataUrl;
+    toast('Photo ready — tap Save to apply ✓');
+  } catch { toast('Failed to process image'); }
+}
+
+function removeItemPhoto(previewId, hiddenId) {
+  const preview = document.getElementById(previewId);
+  preview.src = ''; preview.style.display = 'none';
+  document.getElementById(hiddenId).value = '';
+  toast('Photo removed — tap Save to apply');
+}
+
+async function saveEdit() {
+  await safe(async () => {
+    const item = menuItems.find(i=>i.id===editingId);
+    if (!item) return;
+    const isDrink = item.hot!=null||item.cold!=null||item.frappe!=null;
+    item.name    = document.getElementById('eName').value.trim();
+    item.desc    = document.getElementById('eDesc').value.trim();
+    item.emoji   = document.getElementById('eEmoji').value.trim();
+    item.img_url = document.getElementById('eImg').value.trim();
+    if (isDrink) {
+      item.hot       = parseFloat(document.getElementById('eHot').value)||null;
+      item.hot_oz    = document.getElementById('eHotOz').value.trim()||null;
+      item.cold      = parseFloat(document.getElementById('eCold').value)||null;
+      item.cold_oz   = document.getElementById('eColdOz').value.trim()||null;
+      item.frappe    = parseFloat(document.getElementById('eFrappe').value)||null;
+      item.frappe_oz = document.getElementById('eFrappeOz').value.trim()||null;
+    } else {
+      item.price  = parseFloat(document.getElementById('ePrice').value)||null;
+    }
+    item.addons = collectAddons();
+    await fbSet('menu/items/'+item.id, item);
+    renderMenuList();
+    closeEditModal();
+    toast('Updated ✓');
+  }, 'saveEdit');
+}
+function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+
+// ════════════════════════════════════════════════════════════
+// CATEGORY MANAGEMENT
+// ════════════════════════════════════════════════════════════
+function renderCatList() {
+  const el = document.getElementById('catList');
+  if (!el) return;
+  el.innerHTML = '';
+  menuCats.forEach(cat => {
+    const count = menuItems.filter(i => i.cat === cat.id).length;
+    const row = document.createElement('div');
+    row.className = 'cat-list-row';
+    row.innerHTML = `
+      <span class="cat-list-emoji">${cat.emoji}</span>
+      <span class="cat-list-name">${cat.label}</span>
+      <span class="cat-list-count">${count} item${count !== 1 ? 's' : ''}</span>
+      <div class="cat-list-actions">
+        <button class="mir-btn edit" onclick="openEditCatForm('${cat.id}')">Edit</button>
+        ${count === 0 ? `<button class="mir-btn del" onclick="deleteCat('${cat.id}')">Del</button>` : ''}
+      </div>`;
+    el.appendChild(row);
+  });
+}
+
+let editingCatId = null;
+function openEditCatForm(id) {
+  editingCatId = id;
+  const cat = menuCats.find(c => c.id === id);
+  if (!cat) return;
+  document.getElementById('eCatEmoji').value = cat.emoji || '';
+  document.getElementById('eCatLabel').value = cat.label || '';
+  document.getElementById('editCatFormTitle').textContent = `Edit: ${cat.label}`;
+  document.getElementById('editCatForm').style.display = 'block';
+  document.getElementById('addCatForm').style.display = 'none';
+}
+function closeEditCatForm() {
+  document.getElementById('editCatForm').style.display = 'none';
+  editingCatId = null;
+}
+async function saveCatEdit() {
+  const emoji = document.getElementById('eCatEmoji').value.trim();
+  const label = document.getElementById('eCatLabel').value.trim();
+  if (!label) { toast('Category name required'); return; }
+  await safe(async () => {
+    const cat = menuCats.find(c => c.id === editingCatId);
+    if (!cat) return;
+    cat.emoji = emoji || cat.emoji;
+    cat.label = label;
+    await fbSet('menu/categories/' + cat.id, cat);
+    renderCatList();
+    renderMenuList();
+    closeEditCatForm();
+    toast('Category updated ✓');
+  }, 'saveCatEdit');
+}
+
+function openAddCatForm() {
+  document.getElementById('addCatForm').style.display = 'block';
+  document.getElementById('editCatForm').style.display = 'none';
+  document.getElementById('newCatEmoji').value = '';
+  document.getElementById('newCatLabel').value = '';
+}
+function closeAddCatForm() { document.getElementById('addCatForm').style.display = 'none'; }
+
+async function saveNewCat() {
+  const emoji = document.getElementById('newCatEmoji').value.trim() || '📋';
+  const label = document.getElementById('newCatLabel').value.trim();
+  if (!label) { toast('Category name required'); return; }
+  await safe(async () => {
+    const id = 'cat_' + Date.now();
+    const cat = { id, label, emoji };
+    await fbSet('menu/categories/' + id, cat);
+    menuCats.push(cat);
+    renderCatList();
+    closeAddCatForm();
+    toast('Category added ✓');
+    // Refresh the category dropdown in the add form
+    updateCatDropdown();
+  }, 'saveNewCat');
+}
+
+async function deleteCat(id) {
+  const count = menuItems.filter(i => i.cat === id).length;
+  if (count > 0) { toast('Cannot delete — category has items'); return; }
+  if (!confirm('Delete this category?')) return;
+  await safe(async () => {
+    await fbDelete('menu/categories/' + id);
+    menuCats = menuCats.filter(c => c.id !== id);
+    renderCatList();
+    toast('Category deleted');
+    updateCatDropdown();
+  }, 'deleteCat');
+}
+
+function updateCatDropdown() {
+  const sel = document.getElementById('nCat');
+  if (!sel) return;
+  sel.innerHTML = menuCats.map(c => `<option value="${c.id}">${c.emoji} ${c.label}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// ADDONS EDITOR (in edit modal)
+// ════════════════════════════════════════════════════════════
+let editingAddons = []; // working copy while modal open
+
+function renderAddonsEditor(addons) {
+  editingAddons = JSON.parse(JSON.stringify(addons || []));
+  refreshAddonsEditor();
+}
+
+function refreshAddonsEditor() {
+  const el = document.getElementById('addonsEditor');
+  if (!el) return;
+  el.innerHTML = '';
+  editingAddons.forEach((addon, idx) => {
+    const row = document.createElement('div');
+    row.className = 'addon-editor-row';
+    if (addon.type === 'select') {
+      row.innerHTML = `
+        <div class="addon-editor-header">
+          <span class="addon-editor-type">Choice</span>
+          <span style="font-size:12px;color:var(--text2);flex:1;padding-left:6px">Required selection</span>
+          <button class="addon-editor-del" onclick="removeAddon(${idx})">✕</button>
+        </div>
+        <div class="addon-fields">
+          <input class="form-input" placeholder="Label (e.g. Sauce)" value="${addon.name||''}" oninput="editingAddons[${idx}].name=this.value">
+          <input class="form-input" placeholder="Options (comma separated, e.g. Hainanese, Buttermilk)" value="${(addon.options||[]).join(', ')}" oninput="editingAddons[${idx}].options=this.value.split(',').map(s=>s.trim()).filter(Boolean)">
+        </div>`;
+    } else {
+      row.innerHTML = `
+        <div class="addon-editor-header">
+          <span class="addon-editor-type">Optional</span>
+          <span style="font-size:12px;color:var(--text2);flex:1;padding-left:6px">Checkbox + extra price</span>
+          <button class="addon-editor-del" onclick="removeAddon(${idx})">✕</button>
+        </div>
+        <div class="addon-fields" style="display:grid;grid-template-columns:1fr 90px;gap:6px">
+          <input class="form-input" placeholder="Label (e.g. Extra Sauce)" value="${addon.name||''}" oninput="editingAddons[${idx}].name=this.value">
+          <input class="form-input" type="number" step="0.5" placeholder="${CUR}" value="${addon.price||''}" oninput="editingAddons[${idx}].price=parseFloat(this.value)||0">
+        </div>`;
+    }
+    el.appendChild(row);
+  });
+}
+
+function addAddonField(type) {
+  const id = 'a' + Date.now();
+  if (type === 'select') {
+    editingAddons.push({ id, type: 'select', name: '', options: [] });
+  } else {
+    editingAddons.push({ id, type: 'toggle', name: '', price: 0 });
+  }
+  refreshAddonsEditor();
+}
+
+function removeAddon(idx) {
+  editingAddons.splice(idx, 1);
+  refreshAddonsEditor();
+}
+
+function collectAddons() {
+  return editingAddons.filter(a => a.name).map(a => ({ ...a }));
+}
+
+// ════════════════════════════════════════════════════════════
+// ORDERS TAB
+// ════════════════════════════════════════════════════════════
+async function loadOrders() {
+  await safe(async () => {
+    const snap = await fbGet('orders');
+    const el = document.getElementById('ordersList');
+    if (!snap) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px 0">No orders yet.</div>'; return; }
+    const orders = Object.values(snap).sort((a,b)=>b.ts-a.ts);
+    el.innerHTML = '';
+    orders.forEach(o => {
+      const d = new Date(o.ts);
+      const t = d.toLocaleDateString(APP_CONFIG.brand.locale)+' '+d.toLocaleTimeString(APP_CONFIG.brand.locale,{hour:'2-digit',minute:'2-digit'});
+      const r = document.createElement('div');
+      r.className = 'order-row';
+      const itemsStr = (o.items||[]).map(i=>`${i.name}${i.size?' ('+i.size+')':''} — ${CUR}${Number(i.price).toFixed(2)}`).join('<br>');
+      r.innerHTML = `
+        <div class="order-top"><span class="order-name">👤 ${o.name}</span><span class="order-total">${CUR} ${Number(o.total).toFixed(2)}</span></div>
+        <div class="order-time">${t}</div>
+        <div class="order-items">${itemsStr}</div>
+        ${o.note?`<div style="margin-top:4px;font-size:11px;color:var(--text3);font-style:italic">📝 ${o.note}</div>`:''}`;
+      el.appendChild(r);
+    });
+  }, 'loadOrders');
+}
+
+// ════════════════════════════════════════════════════════════
+// SECURITY TAB
+// ════════════════════════════════════════════════════════════
+async function saveOwnerPin() {
+  const a = document.getElementById('ownerPinA').value;
+  const b = document.getElementById('ownerPinB').value;
+  if (!/^\d{4}$/.test(a)||a!==b) { toast(a!==b?'PINs do not match':'Must be 4 digits'); return; }
+  await safe(async () => {
+    pins.owner = a;
+    const ex = await fbGet('config/pins')||{};
+    ex.owner = a;
+    await fbSet('config/pins', ex);
+    document.getElementById('ownerPinA').value = '';
+    document.getElementById('ownerPinB').value = '';
+    toast('Owner PIN updated ✓');
+  }, 'saveOwnerPin');
+}
+async function saveDevPin() {
+  const a = document.getElementById('devPinA2').value;
+  const b = document.getElementById('devPinB2').value;
+  if (!/^\d{4}$/.test(a)||a!==b) { toast(a!==b?'PINs do not match':'Must be 4 digits'); return; }
+  await safe(async () => {
+    pins.dev = a;
+    const ex = await fbGet('config/pins')||{};
+    ex.dev = a;
+    await fbSet('config/pins', ex);
+    document.getElementById('devPinA2').value = '';
+    document.getElementById('devPinB2').value = '';
+    toast('Dev PIN updated ✓');
+  }, 'saveDevPin');
+}
+
+// ════════════════════════════════════════════════════════════
+// AI STUDIO TAB
+// ════════════════════════════════════════════════════════════
+async function loadStudioTab() {
+  await safe(async () => {
+    currentTheme = await fbGet('config/theme') || { ...DEFAULT_THEME };
+    lastSavedTheme = await fbGet('config/theme_last_saved');
+    document.getElementById('restoreBar').style.display = lastSavedTheme ? 'flex' : 'none';
+
+    if (currentRole === 'dev') {
+      const master = await fbGet('config/theme_master');
+      document.getElementById('masterRestoreBar').style.display = master ? 'flex' : 'none';
+    }
+
+    // Check API key exists
+    const key = await fbGet('config/dev/or_key');
+    document.getElementById('studioKeyStatus').textContent = key ? '✓ AI ready' : '⚠ No API key — see Dev tab';
+    document.getElementById('studioKeyStatus').style.color = key ? 'var(--green)' : 'var(--text3)';
+
+    // Quick chips
+    const chips = document.getElementById('quickChips');
+    chips.innerHTML = '';
+    QUICK_CHIPS.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'chip';
+      el.textContent = c.label;
+      el.onclick = () => {
+        document.getElementById('chatInput').value = c.prompt;
+        document.getElementById('chatInput').focus();
+      };
+      chips.appendChild(el);
+    });
+
+    // Restore chat history display
+    renderChatHistory();
+  }, 'loadStudio');
+}
+
+// ── ZIP UPLOAD & DNA EXTRACTION ──
+async function handleZip(file) {
+  if (!file) return;
+  document.getElementById('zipStatus').style.display = 'block';
+  document.getElementById('zipStatus').textContent = 'Reading ZIP...';
+  await safe(async () => {
+    const zip = await JSZip.loadAsync(file);
+    // Find CSS files
+    const cssFiles = Object.keys(zip.files).filter(n =>
+      n.endsWith('.css') && !n.includes('node_modules') && !n.includes('.min.')
+    );
+    if (!cssFiles.length) { toast('No CSS files found in ZIP'); return; }
+
+    // Prefer main/style.css
+    const preferred = cssFiles.find(f => /\/(style|main|app|index)\.css$/i.test(f)) || cssFiles[0];
+    const cssText = await zip.files[preferred].async('string');
+    document.getElementById('zipStatus').textContent = `Found: ${preferred} (${(cssText.length/1024).toFixed(0)}KB) — extracting DNA...`;
+
+    const dna = extractCSSDNA(cssText);
+    extractedFonts   = dna.fonts;
+    extractedPalette = dna.palette;
+
+    renderFontPanel(dna.fonts);
+    renderColorPanel(dna.palette);
+    document.getElementById('zipStatus').textContent = `✓ Extracted ${dna.palette.length} colors, ${dna.fonts.imports.length} font imports`;
+  }, 'handleZip');
+}
+
+function extractCSSDNA(css) {
+  const dna = { fonts: { imports:[], families:[] }, palette:[] };
+
+  // @import lines
+  const imports = css.match(/@import[^;]+;/g) || [];
+  dna.fonts.imports = imports.filter(i => /font|google|typekit/i.test(i));
+
+  // font-family values
+  const families = [];
+  const ffMatches = css.matchAll(/font-family\s*:\s*([^;}]+)/g);
+  for (const m of ffMatches) {
+    const val = m[1].trim().replace(/!important/,'').trim();
+    if (val && !families.includes(val)) families.push(val);
+  }
+  dna.fonts.families = [...new Set(families)].slice(0,6);
+
+  // :root block
+  const rootMatch = css.match(/:root\s*\{([^}]+)\}/);
+  if (rootMatch) {
+    const hexes = rootMatch[1].match(/#[0-9a-fA-F]{3,8}\b/g) || [];
+    hexes.forEach(h => { if (!dna.palette.includes(h)) dna.palette.push(h); });
+  }
+
+  // All hex colors in file (fallback + supplement)
+  const allHex = css.match(/#[0-9a-fA-F]{6}\b/g) || [];
+  allHex.forEach(h => { if (!dna.palette.includes(h)) dna.palette.push(h); });
+
+  // Deduplicate, normalize, limit to 16
+  dna.palette = [...new Set(dna.palette.map(h => h.length === 4
+    ? '#' + h[1]+h[1]+h[2]+h[2]+h[3]+h[3]
+    : h.substring(0,7).toLowerCase()
+  ))].slice(0,16);
+
+  return dna;
+}
+
+function renderFontPanel(fonts) {
+  const panel = document.getElementById('fontPanel');
+  const wrap  = document.getElementById('fontPreviewWrap');
+  if (!fonts.families.length && !fonts.imports.length) { panel.style.display='none'; return; }
+  panel.style.display = 'block';
+
+  // Inject font imports into head
+  fonts.imports.forEach(imp => {
+    const existing = document.querySelector(`style[data-template-font]`);
+    if (!existing) {
+      const style = document.createElement('style');
+      style.setAttribute('data-template-font','1');
+      style.textContent = imp;
+      document.head.appendChild(style);
+    }
+  });
+
+  const primaryFamily = fonts.families[0] || 'serif';
+  wrap.innerHTML = `
+    <div class="font-preview">
+      <div class="font-preview-name">Template Display Font</div>
+      <div class="font-preview-sample" style="font-family:${primaryFamily}">${APP_CONFIG.brand.appName}</div>
+      <div class="font-preview-body" style="font-family:${fonts.families[1]||primaryFamily}">Freshly brewed every morning. Open 8AM.</div>
+    </div>`;
+
+  const targets = document.getElementById('fontTargets');
+  targets.innerHTML = '';
+  fontChoices = {};
+  FONT_TARGETS.forEach(t => {
+    fontChoices[t.id] = 'current';
+    const row = document.createElement('div');
+    row.className = 'font-target-row';
+    row.innerHTML = `
+      <span class="font-target-label">${t.label}</span>
+      <div class="font-target-toggle">
+        <button class="font-choice active" id="fc-cur-${t.id}" onclick="setFontChoice('${t.id}','current')">Current</button>
+        <button class="font-choice" id="fc-tpl-${t.id}" onclick="setFontChoice('${t.id}','template')">Template</button>
+      </div>`;
+    targets.appendChild(row);
+  });
+}
+
+function setFontChoice(targetId, choice) {
+  fontChoices[targetId] = choice;
+  document.getElementById('fc-cur-'+targetId).classList.toggle('active', choice==='current');
+  document.getElementById('fc-tpl-'+targetId).classList.toggle('active', choice==='template');
+}
+
+function renderColorPanel(palette) {
+  const panel = document.getElementById('colorPanel');
+  if (!palette.length) { panel.style.display='none'; return; }
+  panel.style.display = 'block';
+
+  // Palette swatches
+  const grid = document.getElementById('paletteGrid');
+  grid.innerHTML = '';
+  palette.forEach(hex => {
+    const wrap = document.createElement('div');
+    wrap.className = 'swatch-wrap';
+    wrap.innerHTML = `
+      <div class="swatch" style="background:${hex}" title="${hex}" onclick="selectSwatch('${hex}',this)"></div>
+      <div class="swatch-label">${hex}</div>`;
+    grid.appendChild(wrap);
+  });
+
+  // Color targets
+  const targets = document.getElementById('colorTargets');
+  targets.innerHTML = '';
+  colorChoices = {};
+  COLOR_TARGETS.forEach(t => {
+    colorChoices[t.id] = currentTheme[t.fbKey] || '#C8962A';
+    const row = document.createElement('div');
+    row.className = 'color-target-row';
+    row.innerHTML = `
+      <span class="color-target-label">${t.label}</span>
+      <div class="color-target-right">
+        <div class="color-preview-dot" id="cdot-${t.id}" style="background:${colorChoices[t.id]}"></div>
+        <input type="color" id="cpick-${t.id}" value="${colorChoices[t.id]}"
+          oninput="setColorChoice('${t.id}',this.value)">
+      </div>`;
+    targets.appendChild(row);
+  });
+}
+
+let selectedSwatch = null;
+let selectedSwatchEl = null;
+function selectSwatch(hex, el) {
+  if (selectedSwatchEl) selectedSwatchEl.classList.remove('selected');
+  selectedSwatch = hex;
+  selectedSwatchEl = el;
+  el.classList.add('selected');
+  toast(`${hex} selected — tap a color target's picker to apply`);
+}
+
+function setColorChoice(targetId, hex) {
+  colorChoices[targetId] = hex;
+  document.getElementById('cdot-'+targetId).style.background = hex;
+}
+
+// ── APPLY FONTS ──
+async function applyFonts() {
+  await safe(async () => {
+    await snapshotBeforeSave();
+    const themeUpdate = { ...currentTheme };
+    const primaryFamily = extractedFonts?.families[0] || '';
+    const bodyFamily    = extractedFonts?.families[1] || extractedFonts?.families[0] || '';
+
+    FONT_TARGETS.forEach(t => {
+      if (fontChoices[t.id] === 'template') {
+        const family = t.cssVar === '--font-display' ? primaryFamily : bodyFamily;
+        if (t.cssVar === '--font-display') themeUpdate.font_display = `'${family}', serif`;
+        else themeUpdate.font_body = `'${family}', sans-serif`;
+      }
+    });
+    await fbSet('config/theme', themeUpdate);
+    currentTheme = themeUpdate;
+    document.getElementById('restoreBar').style.display = 'flex';
+    toast('Fonts applied — reload index.html to see changes ✓');
+  }, 'applyFonts');
+}
+
+// ── APPLY COLORS ──
+async function applyColors() {
+  await safe(async () => {
+    await snapshotBeforeSave();
+    const themeUpdate = { ...currentTheme };
+    COLOR_TARGETS.forEach(t => {
+      if (colorChoices[t.id]) themeUpdate[t.fbKey] = colorChoices[t.id];
+    });
+    await fbSet('config/theme', themeUpdate);
+    currentTheme = themeUpdate;
+    document.getElementById('restoreBar').style.display = 'flex';
+    toast('Colors applied — reload index.html to see changes ✓');
+  }, 'applyColors');
+}
+
+// ── SNAPSHOT ──
+async function snapshotBeforeSave() {
+  const current = await fbGet('config/theme');
+  if (current) {
+    await fbSet('config/theme_last_saved', current);
+    lastSavedTheme = current;
+  }
+}
+
+async function restoreLastSaved() {
+  if (!lastSavedTheme) { toast('No saved theme found'); return; }
+  await safe(async () => {
+    await fbSet('config/theme', lastSavedTheme);
+    currentTheme = lastSavedTheme;
+    toast('Last saved theme restored — reload index.html ✓');
+  }, 'restoreLastSaved');
+}
+
+async function restoreMaster() {
+  if (!confirm('Factory reset to master copy? This will undo all theme changes.')) return;
+  await safe(async () => {
+    const master = await fbGet('config/theme_master');
+    if (!master) { toast('No master snapshot found'); return; }
+    await snapshotBeforeSave();
+    await fbSet('config/theme', master);
+    currentTheme = master;
+    toast('Master theme restored — reload index.html ✓');
+  }, 'restoreMaster');
+}
+
+// ── STUDIO SAVE ──
+async function studioSaveAndContinue() {
+  await safe(async () => {
+    await fbSet('config/theme', currentTheme);
+    toast('Saved ✓ — reload index.html to see changes');
+  }, 'studioSave');
+}
+async function studioSaveAndExit() {
+  await safe(async () => {
+    await fbSet('config/theme', currentTheme);
+    toast('Saved — reopen admin panel when needed');
+    setTimeout(logout, 1200);
+  }, 'studioExit');
+}
+
+// ════════════════════════════════════════════════════════════
+// AI CHAT
+// ════════════════════════════════════════════════════════════
+function renderChatHistory() {
+  const el = document.getElementById('chatHistory');
+  el.innerHTML = '';
+  if (!chatHistory.length) {
+    const sys = document.createElement('div');
+    sys.className = 'chat-msg system';
+    sys.textContent = 'Tell me what to change — font, color, section, anything.';
+    el.appendChild(sys);
+    return;
+  }
+  chatHistory.forEach(m => {
+    const d = document.createElement('div');
+    d.className = 'chat-msg '+m.role;
+    d.textContent = m.content;
+    el.appendChild(d);
+  });
+  el.scrollTop = el.scrollHeight;
+}
+
+async function buildContext() {
+  const [store, theme, items] = (await Promise.all([
+    fbGet('config/store'), fbGet('config/theme'), fbGet('menu/items')
+  ])).map(r => r || {});
+
+  const menuBycat = {};
+  Object.values(items).forEach(i => {
+    if (!menuBycat[i.cat]) menuBycat[i.cat] = [];
+    menuBycat[i.cat].push({
+      name: i.name,
+      available: i.avail !== false,
+      ...(i.price ? { price: `${CUR}${i.price}` } : {}),
+      ...(i.hot   ? { hot:   `${CUR}${i.hot}`   } : {}),
+      ...(i.cold  ? { cold:  `${CUR}${i.cold}`  } : {}),
+      ...(i.frappe? { frappe:`${CUR}${i.frappe}`} : {}),
+    });
+  });
+
+  return `CURRENT STATE:
+store:
+  name: ${store.name || APP_CONFIG.store.name}
+  status: ${store.isOpen !== false ? 'open' : 'closed'}
+  hours: ${store.hours || '8AM - 10PM'}
+  slogan: ${store.slogan || ''}
+
+theme:
+  background: "${theme.bg}"
+  card_background: "${theme.surface}"
+  primary_color: "${theme.primary}"
+  accent_color: "${theme.accent}"
+  text_color: "${theme.text}"
+  font_heading: ${theme.font_display}
+  font_body: ${theme.font_body}
+
+menu:
+${Object.entries(menuBycat).map(([cat,items]) =>
+  `  ${cat}:\n${items.map(i => `    - ${JSON.stringify(i)}`).join('\n')}`
+).join('\n')}
+
+site_structure:
+  sections: [${menuCats.map(c => c.id).join(', ')}]
+  css_variables:
+    --bg: page background
+    --surface: card/white areas
+    --primary: headings and logo text
+    --accent: prices, active tabs, highlights
+    --text: main body text
+    --font-display: heading font
+    --font-body: body and UI font
+  key_elements:
+    .card-name: menu item name text
+    .price-val: drink prices (hot/cold/frappe)
+    .price-single: food item prices
+    .section-title: large heading per section
+    .cat-tab.active: active navigation tab
+    .special-wrap: friday special dark container
+    .fab-btn: whatsapp order button (NEVER change color - must stay green)
+    .status-pill: open/closed badge`;
+}
+
+const PROGRESS_MSGS = [
+  'Reading menu context...',
+  'Interpreting request...',
+  'Preparing changes...',
+  'Sending to AI...',
+  'Waiting for response...',
+];
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  input.style.height = '40px';
+
+  chatHistory.push({ role:'user', content:msg, ts: Date.now() });
+  renderChatHistory();
+
+  // Show thinking
+  const hist = document.getElementById('chatHistory');
+  const thinking = document.createElement('div');
+  thinking.className = 'chat-thinking';
+  thinking.innerHTML = '<span></span><span></span><span></span>';
+  hist.appendChild(thinking);
+  hist.scrollTop = hist.scrollHeight;
+
+  // Progress messages
+  const progress = document.getElementById('chatProgress');
+  progress.style.display = 'block';
+  let pi = 0;
+  progress.textContent = PROGRESS_MSGS[0];
+  const progTimer = setInterval(() => {
+    pi = (pi+1) % PROGRESS_MSGS.length;
+    progress.textContent = PROGRESS_MSGS[pi];
+  }, 1200);
+
+  await safe(async () => {
+    const key = await fbGet('config/dev/or_key');
+    if (!key) throw new Error('No API key configured. Contact your developer.');
+
+    const sysPrompt = await fbGet('config/dev/sys_prompt') || DEFAULT_SYS_PROMPT;
+    const context   = await buildContext();
+
+    const messages = [
+      { role:'system', content: sysPrompt },
+      { role:'user',   content: context + '\n\n---\n' + msg }
+    ];
+    // Inject last 6 turns of chat history as context
+    const recentHistory = chatHistory.slice(-7, -1);
+    if (recentHistory.length) {
+      messages.splice(1, 0, ...recentHistory.map(h => ({
+        role: h.role === 'user' ? 'user' : 'assistant',
+        content: h.content
+      })));
+    }
+
+    const res = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json',
+                 'HTTP-Referer': location.origin, 'X-Title': APP_CONFIG.brand.adminName },
+      body: JSON.stringify({
+        model: orModel,
+        messages,
+        max_tokens: 600,
+        temperature: 0.3
+      })
+    }, 25000);
+
+    clearInterval(progTimer);
+    progress.style.display = 'none';
+    thinking.remove();
+
+    const data = await res.json();
+    if (data.error) throw new Error(`[${data.error.code || res.status}] ${data.error.message || 'AI error'}`);
+
+    const raw  = data.choices?.[0]?.message?.content || '{}';
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/gi,'').trim()); }
+    catch { parsed = { action: raw }; }
+
+    // Build display message
+    let display = '';
+    if (parsed.understood) display += `${parsed.understood}\n\n`;
+    if (parsed.action)     display += `${parsed.action}`;
+    if (parsed.suggestion) display += `\n\n💡 ${parsed.suggestion}`;
+    if (!display)          display  = raw;
+
+    chatHistory.push({ role:'ai', content: display, ts: Date.now() });
+    renderChatHistory();
+
+    // Apply changes if any
+    if (parsed.changes) {
+      await snapshotBeforeSave();
+      const { theme, store, menu_availability } = parsed.changes;
+
+      if (theme && Object.keys(theme).length) {
+        // Validate hex values
+        const validated = {};
+        Object.entries(theme).forEach(([k,v]) => {
+          if (typeof v === 'string' && (v.startsWith('#') ? /^#[0-9a-fA-F]{6}$/.test(v) : true)) {
+            validated[k] = v;
+          }
+        });
+        const updated = { ...currentTheme, ...validated };
+        await fbSet('config/theme', updated);
+        currentTheme = updated;
+        document.getElementById('restoreBar').style.display = 'flex';
+      }
+
+      if (store && Object.keys(store).length) {
+        const s = await fbGet('config/store') || {};
+        // Never allow phone number change via AI
+        delete store.phone;
+        await fbSet('config/store', { ...s, ...store });
+      }
+
+      if (menu_availability) {
+        for (const [id, val] of Object.entries(menu_availability)) {
+          const item = menuItems.find(i => i.id === id);
+          if (item) { item.avail = val; await fbSet('menu/items/'+id, item); }
+        }
+        renderMenuList();
+      }
+    }
+
+  }, 'sendChat');
+
+  clearInterval(progTimer);
+  document.getElementById('chatProgress').style.display = 'none';
+  document.getElementById('chatHistory').querySelector('.chat-thinking')?.remove();
+}
+
+// ════════════════════════════════════════════════════════════
+// DEV TAB
+// ════════════════════════════════════════════════════════════
+async function loadDevTab() {
+  await safe(async () => {
+    // API key
+    const key = await fbGet('config/dev/or_key');
+    if (key) document.getElementById('orKey').value = key;
+
+    // Saved model
+    const savedModel = await fbGet('config/dev/or_model');
+    if (savedModel) {
+      orModel = savedModel;
+      const sel = document.getElementById('modelSelect');
+      let opt = sel.querySelector(`option[value="${savedModel}"]`);
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = savedModel;
+        opt.textContent = savedModel;
+        sel.appendChild(opt);
+      }
+      opt.selected = true;
+      document.getElementById('modelStatus').textContent = `Current: ${savedModel}`;
+    }
+
+    // System prompt
+    const sp = await fbGet('config/dev/sys_prompt');
+    document.getElementById('sysPromptInput').value = sp || DEFAULT_SYS_PROMPT;
+
+    // Error log
+    await loadErrorLog();
+  }, 'loadDev');
+}
+
+async function loadErrorLog() {
+  const snap = await fbGet('error_log');
+  const el   = document.getElementById('errorLog');
+  if (!snap) { el.innerHTML = '<div style="color:var(--text2);font-size:13px">No errors logged.</div>'; return; }
+  const errors = Object.values(snap).sort((a,b) => b.ts-a.ts).slice(0,20);
+  el.innerHTML = '';
+  errors.forEach(e => {
+    const d = document.createElement('div');
+    d.className = 'error-row';
+    const t = new Date(e.ts).toLocaleString(APP_CONFIG.brand.locale);
+    d.innerHTML = `
+      <div class="error-row-time">${t}</div>
+      <div class="error-row-msg">${e.msg || 'Unknown error'}</div>
+      ${e.ctx ? `<div class="error-row-ctx">Context: ${e.ctx}</div>` : ''}`;
+    el.appendChild(d);
+  });
+}
+
+async function testKey() {
+  const k = document.getElementById('orKey').value.trim();
+  const status = document.getElementById('keyStatus');
+  if (!k) { toast('Enter a key first'); return; }
+  status.textContent = 'Testing...'; status.className = 'key-status';
+  await safe(async () => {
+    const r = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
+      method:'POST',
+      headers:{'Authorization':`Bearer ${k}`,'Content-Type':'application/json',
+               'HTTP-Referer':location.origin,'X-Title':APP_CONFIG.brand.adminName},
+      body: JSON.stringify({ model: orModel, messages:[{role:'user',content:'Say: OK'}], max_tokens:30 })
+    }, 15000);
+    const d = await r.json();
+    if (d.error) throw new Error(`[${d.error.code || r.status}] ${d.error.message}`);
+    const choice = d.choices?.[0];
+    const txt = choice?.message?.content?.trim() || '';
+    if (txt) {
+      status.textContent = `✓ ${orModel} — key valid`;
+      status.className = 'key-status ok';
+    } else {
+      const reason = choice?.finish_reason || 'no choices returned';
+      logError({ type:'testKey_empty_response', model: orModel, http_status: r.status, finish_reason: reason, raw: JSON.stringify(d).slice(0, 500) });
+      status.textContent = `⚠ Empty response — finish: ${reason} — see Error Log`;
+      status.className = 'key-status err';
+    }
+  }, 'testKey');
+}
+
+async function saveKey() {
+  const k = document.getElementById('orKey').value.trim();
+  if (!k) { toast('Enter a key'); return; }
+  await safe(async () => {
+    await fbSet('config/dev/or_key', k);
+    toast('API key saved ✓');
+  }, 'saveKey');
+}
+
+async function fetchModels() {
+  const k = document.getElementById('orKey').value.trim();
+  const status = document.getElementById('modelStatus');
+  if (!k) { toast('Save API key first'); return; }
+  status.textContent = 'Fetching models...';
+  status.className = 'key-status';
+  await safe(async () => {
+    const r = await fetchWithTimeout('https://openrouter.ai/api/v1/models', 8000);
+    const data = await r.json();
+    const free = (data.data || []).filter(m =>
+      m.pricing?.prompt === '0' && m.pricing?.completion === '0'
+    ).sort((a, b) => a.name.localeCompare(b.name));
+
+    const sel = document.getElementById('modelSelect');
+    const current = orModel;
+    sel.innerHTML = '';
+    if (!free.length) {
+      sel.innerHTML = '<option value="">No free models found</option>';
+      status.textContent = 'No free models available';
+      return;
+    }
+    free.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name;
+      if (m.id === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    status.textContent = `✓ ${free.length} free models loaded`;
+    status.className = 'key-status ok';
+  }, 'fetchModels');
+}
+
+async function saveModel() {
+  const sel = document.getElementById('modelSelect');
+  const m = sel.value;
+  if (!m) { toast('Select a model first'); return; }
+  await safe(async () => {
+    await fbSet('config/dev/or_model', m);
+    orModel = m;
+    document.getElementById('modelStatus').textContent = `Saved: ${m}`;
+    toast('Model saved ✓');
+  }, 'saveModel');
+}
+
+async function saveSysPrompt() {
+  await safe(async () => {
+    await fbSet('config/dev/sys_prompt', document.getElementById('sysPromptInput').value);
+    toast('System prompt saved ✓');
+  }, 'saveSysPrompt');
+}
+
+async function takeMasterSnapshot() {
+  if (!confirm('Take master snapshot of current theme? This becomes the factory reset point.')) return;
+  await safe(async () => {
+    const current = await fbGet('config/theme');
+    await fbSet('config/theme_master', current);
+    toast('Master snapshot taken ✓');
+  }, 'masterSnapshot');
+}
+
+// ════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ════════════════════════════════════════════════════════════
+// ZIP DRAG AND DROP
+// ════════════════════════════════════════════════════════════
+const zipDrop = document.getElementById('zipDrop');
+zipDrop.addEventListener('dragover', e => { e.preventDefault(); zipDrop.classList.add('drag'); });
+zipDrop.addEventListener('dragleave', () => zipDrop.classList.remove('drag'));
+zipDrop.addEventListener('drop', e => {
+  e.preventDefault(); zipDrop.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file?.name.endsWith('.zip')) handleZip(file);
+  else toast('Please drop a .zip file');
+});
+
+// ════════════════════════════════════════════════════════════
+// START
+// ════════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
