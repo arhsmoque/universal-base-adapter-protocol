@@ -1,0 +1,64 @@
+component: ""
+version: "0.1.0"
+schema_version: "1.0"
+protocol: "Universal Base/Adapter Design and Coding Protocol v1.5"
+conformance_level: 0
+surface: "base | cli | web | api | mcp | worker | skill | docs | lsp | sandbox"
+risk_class: "read_only | local_mutation | external_mutation | destructive | open_world"
+risk_modifiers: []
+status: "experimental | active | deprecated | archived"
+owner: ""
+review_cadence: ""
+
+architecture:
+  base: ""
+  adapters: []
+  rules_config: ""
+  ports: []
+
+salvage:
+  decision: "use | wrap | mechanical_port | extract_pattern | build_from_scratch | reject"
+  source: ""
+  version: ""
+  license: ""
+  rationale: ""
+  provenance: ""
+  smoke_test: ""
+  rollback_path: ""
+
+contracts:
+  input_schema: ""
+  output_schema: "result-envelope"
+  error_taxonomy: ""
+  idempotency: ""
+  dry_run: false
+  approval_required: false
+
+budget:
+  max_tokens: null
+  max_pages: null
+  max_bytes: null
+  max_cost_usd: null
+
+commands:
+  install: ""
+  test: ""
+  lint: ""
+  format: ""
+  smoke: ""
+  dry_run: ""
+  replay: ""
+  housekeeping: ""
+
+observability:
+  trace_id: true
+  event_log: ""
+  failure_artifacts: ""
+  continuation_packet: ""
+
+housekeeping:
+  scratch_paths: []
+  archive_policy: "90 days unless marked permanent-reference"
+  discovery_pollution_check: ""
+
+escape_hatches: []

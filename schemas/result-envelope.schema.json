@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arh.local/schemas/universal-base-adapter/result-envelope.schema.json",
+  "title": "Universal Base/Adapter Result Envelope",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["status", "changed", "summary", "data", "evidence", "warnings", "errors", "trace_id", "duration_ms"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["success", "partial_success", "error", "blocked", "budget_exceeded"]
+    },
+    "changed": { "type": "boolean" },
+    "summary": { "type": "string" },
+    "data": { "type": ["object", "array", "string", "number", "boolean", "null"] },
+    "evidence": {
+      "type": "array",
+      "items": { "type": ["object", "string"] }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": ["object", "string"] }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["code", "message", "recoverable"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "recoverable": { "type": "boolean" },
+          "next_action_hint": { "type": "string" }
+        }
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": ["object", "string"] }
+    },
+    "trace_id": { "type": "string" },
+    "duration_ms": { "type": "number", "minimum": 0 },
+    "freshness": { "type": "string" },
+    "confidence": { "type": "string" },
+    "usage": { "$ref": "#/$defs/budget_usage" },
+    "budget": { "$ref": "#/$defs/budget_usage" },
+    "continuation_token": { "type": ["string", "null"] },
+    "affected_items": {
+      "type": "array",
+      "items": { "type": ["object", "string"] }
+    },
+    "user_visible_effect": { "type": "string" },
+    "reversible": { "type": "boolean" },
+    "undo": { "type": "string" },
+    "verification": { "type": "string" },
+    "idempotency_key": { "type": "string" },
+    "approval": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "required": { "type": "boolean" },
+        "approval_token": { "type": ["string", "null"] },
+        "staged_changes": {
+          "type": "array",
+          "items": { "type": ["object", "string"] }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["success", "partial_success", "error", "skipped", "blocked"] },
+          "trace_id": { "type": "string" },
+          "duration_ms": { "type": "number", "minimum": 0 },
+          "evidence": { "type": "array" },
+          "errors": { "type": "array" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "budget_usage": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "tokens_used": { "type": ["integer", "null"], "minimum": 0 },
+        "pages_fetched": { "type": ["integer", "null"], "minimum": 0 },
+        "bytes_read": { "type": ["integer", "null"], "minimum": 0 },
+        "cost_usd_estimate": { "type": ["number", "null"], "minimum": 0 },
+        "max_tokens": { "type": ["integer", "null"], "minimum": 0 },
+        "max_pages": { "type": ["integer", "null"], "minimum": 0 },
+        "max_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "max_cost_usd": { "type": ["number", "null"], "minimum": 0 }
+      }
+    }
+  }
+}

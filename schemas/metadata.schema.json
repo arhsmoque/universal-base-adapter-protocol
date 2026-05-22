@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arh.local/schemas/universal-base-adapter/metadata.schema.json",
+  "title": "Universal Base/Adapter Component Metadata",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["component", "version", "schema_version", "protocol", "conformance_level", "surface", "risk_class", "status"],
+  "properties": {
+    "component": { "type": "string" },
+    "version": { "type": "string" },
+    "schema_version": { "type": "string" },
+    "protocol": { "type": "string", "const": "Universal Base/Adapter Design and Coding Protocol v1.5" },
+    "conformance_level": { "type": "integer", "minimum": 0, "maximum": 4 },
+    "surface": {
+      "type": "string",
+      "enum": ["base", "cli", "web", "api", "mcp", "worker", "skill", "docs", "lsp", "sandbox"]
+    },
+    "risk_class": {
+      "type": "string",
+      "enum": ["read_only", "local_mutation", "external_mutation", "destructive", "open_world"]
+    },
+    "risk_modifiers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["secret_bearing", "regulated_data", "network_access", "filesystem_broad_scope", "privileged_auth", "generated_code_execution", "payment_or_cost_impact"]
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "type": "string",
+      "enum": ["experimental", "active", "deprecated", "archived"]
+    },
+    "owner": { "type": "string" },
+    "review_cadence": { "type": "string" },
+    "architecture": { "type": "object" },
+    "salvage": { "type": "object" },
+    "contracts": { "type": "object" },
+    "budget": { "type": "object" },
+    "commands": { "type": "object" },
+    "observability": { "type": "object" },
+    "housekeeping": { "type": "object" },
+    "escape_hatches": { "type": "array" }
+  }
+}

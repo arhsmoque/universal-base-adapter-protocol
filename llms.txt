@@ -1,0 +1,26 @@
+# Universal Base/Adapter Protocol
+
+Canonical agent instruction file: AGENTS.md
+
+Primary documents:
+- README.md
+- UNIVERSAL_BASE_ADAPTER_PROTOCOL.md
+- GOVERNANCE_IMPLEMENTATION_GUIDE.md
+- METADATA.yml
+
+Validation:
+- scripts/check_conformance.py
+- schemas/metadata.schema.json
+- schemas/result-envelope.schema.json
+- schemas/spec-packet.schema.json
+- schemas/conformance-linter-output.schema.json
+
+Adapter contracts:
+- adapters/CLI_ADAPTER.md
+- adapters/MCP_ADAPTER.md
+- adapters/LSP_ADAPTER.md
+- adapters/SANDBOX_ADAPTER.md
+- adapters/SUPPLY_CHAIN_ADAPTER.md
+- adapters/WEBAPP_FULLSTACK_ADAPTER.md
+- adapters/WORKER_AUTOMATION_ADAPTER.md
+- adapters/DOCUMENTATION_SKILL_ADAPTER.md

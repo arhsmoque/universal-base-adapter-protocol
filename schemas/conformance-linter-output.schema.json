@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arh.local/schemas/universal-base-adapter/conformance-linter-output.schema.json",
+  "title": "Universal Base/Adapter Conformance Linter Output",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["status", "claimed_level", "verified_level", "findings", "evidence", "schema_version"],
+  "properties": {
+    "status": { "type": "string", "enum": ["success", "partial_success", "error"] },
+    "claimed_level": { "type": "integer", "minimum": 0, "maximum": 4 },
+    "verified_level": { "type": "integer", "minimum": 0, "maximum": 4 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["severity", "id", "message", "agent_action"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["warn", "error"] },
+          "id": { "type": "string" },
+          "message": { "type": "string" },
+          "agent_action": { "type": "string" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": ["object", "string"] }
+    },
+    "trace_id": { "type": "string" },
+    "schema_version": { "type": "string" }
+  }
+}
