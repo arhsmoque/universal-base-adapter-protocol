@@ -1,0 +1,27 @@
+component: "sandbox-adapter"
+version: "1.5.0"
+schema_version: "1.0"
+protocol: "Universal Base/Adapter Design and Coding Protocol v1.5"
+conformance_level: 2
+surface: "sandbox"
+risk_class: "external_mutation"
+risk_modifiers: ["generated_code_execution", "filesystem_broad_scope", "network_access"]
+status: "experimental"
+owner: "ARH governance"
+review_cadence: "monthly until promoted to active"
+
+notes: |
+  The Sandbox adapter is the newest v1.5 addition. Its contract is still being
+  validated against real workloads (generated-code execution, staged mutation,
+  network allowlists, approval gates). Treat as provisional until promoted to
+  `status: active` via a REVIEW_DECISION_NOTE.
+
+dependencies:
+  - "adapters/MCP_ADAPTER.md (for tool-surface security)"
+  - "adapters/SUPPLY_CHAIN_ADAPTER.md (for binary provenance of sandbox runtime)"
+
+promotion_criteria:
+  - "At least two real components have shipped a Level 3 sandbox adapter implementation."
+  - "Network allowlist and filesystem scope enforcement have been smoke-tested."
+  - "Approval gate has been exercised end-to-end with audit trail."
+  - "A v1.6 (or v1.5.x) REVIEW_DECISION_NOTE has approved the active status."

@@ -6,7 +6,7 @@
 - Explicit user instructions in the active conversation override this file.
 - Tool/platform safety policy overrides project instructions.
 - If instructions conflict and no precedence rule resolves it, stop and ask.
-- Agent-specific files may translate invocation details, but must not fork protocol doctrine.
+- Agent-specific files (`CLAUDE.md`, `CODEX.md`, `GEMINI.md`, `KIMI.md`) translate invocation details for their host. They may **not** fork protocol doctrine. If an agent-specific file contradicts this file, this file wins.
 
 ## Purpose
 

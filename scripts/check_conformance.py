@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import sys
 import time
 from pathlib import Path
@@ -15,6 +16,10 @@ from typing import Any
 RISK_CLASSES = {"read_only", "local_mutation", "external_mutation", "destructive", "open_world"}
 SURFACES = {"base", "cli", "web", "api", "mcp", "worker", "skill", "docs", "lsp", "sandbox"}
 MUTATION_RISKS = {"local_mutation", "external_mutation", "destructive", "open_world"}
+MODIFIER_REQUIRED_RISKS = {"external_mutation", "destructive"}
+TELEMETRY_EMITTING_SURFACES = {"cli", "web", "api", "mcp", "worker", "sandbox"}
+SCRIPT_EXTENSIONS = {".py", ".ps1", ".sh", ".bash", ".js", ".mjs", ".cjs", ".ts", ".rb", ".pl", ".bat", ".cmd"}
+KNOWN_RUNTIMES = {"python", "python3", "pwsh", "powershell", "node", "ruby", "perl", "bash", "sh", "deno", "bun"}
 
 
 def parse_scalar(value: str) -> Any:
@@ -91,6 +96,77 @@ def find_metadata(component_dir: Path) -> Path | None:
     return None
 
 
+def looks_like_path_token(token: str) -> bool:
+    """Heuristic: token is path-like and should be resolved against the component dir."""
+    if not token or token.startswith("-"):
+        return False
+    if token in {".", "..", "/"} or token in KNOWN_RUNTIMES:
+        return False
+    if token.startswith(("http://", "https://", "file://")):
+        return False
+    if Path(token).is_absolute():
+        return False
+    has_separator = "/" in token or "\\" in token
+    has_script_ext = Path(token).suffix.lower() in SCRIPT_EXTENSIONS
+    return has_separator or has_script_ext
+
+
+def resolve_command_paths(component_dir: Path, command: str) -> list[tuple[str, bool]]:
+    """Return list of (token, exists) for path-like tokens inside a command string."""
+    if not command:
+        return []
+    try:
+        tokens = shlex.split(command, posix=False)
+    except ValueError:
+        tokens = command.split()
+    results: list[tuple[str, bool]] = []
+    for token in tokens:
+        token = token.strip('"').strip("'").rstrip(",;:.")
+        if looks_like_path_token(token):
+            normalized = token.replace("\\", "/")
+            candidate = (component_dir / normalized).resolve()
+            results.append((token, candidate.exists()))
+    return results
+
+
+def validate_schema_file(path: Path) -> tuple[bool, str]:
+    """Return (ok, error_message) for a JSON Schema file."""
+    if not path.exists():
+        return False, "missing"
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+        doc = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return False, f"invalid JSON: {exc.msg} at line {exc.lineno}"
+    if not isinstance(doc, dict):
+        return False, "root must be a JSON object"
+    if doc.get("type") not in {"object", "array"} and "$ref" not in doc and "oneOf" not in doc and "anyOf" not in doc:
+        return False, "schema lacks `type`, `$ref`, `oneOf`, or `anyOf`"
+    return True, ""
+
+
+def validate_composite_envelope(component_dir: Path) -> tuple[bool, str]:
+    """Composite components must ship examples/envelope.json with steps[].trace_id."""
+    candidates = [
+        component_dir / "examples" / "envelope.json",
+        component_dir / "examples" / "envelope.example.json",
+    ]
+    path = next((p for p in candidates if p.exists()), None)
+    if path is None:
+        return False, "no examples/envelope.json found"
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError as exc:
+        return False, f"envelope JSON invalid: {exc.msg} at line {exc.lineno}"
+    steps = doc.get("steps") if isinstance(doc, dict) else None
+    if not isinstance(steps, list) or not steps:
+        return False, "envelope is missing a non-empty `steps` array"
+    for idx, step in enumerate(steps):
+        if not isinstance(step, dict) or not step.get("trace_id"):
+            return False, f"steps[{idx}] missing `trace_id`"
+    return True, ""
+
+
 def check(component_dir: Path, target_level: int) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
     evidence: list[dict[str, str]] = []
@@ -141,6 +217,18 @@ def check(component_dir: Path, target_level: int) -> dict[str, Any]:
     if not isinstance(salvage, dict):
         salvage = {}
 
+    risk_modifiers = metadata.get("risk_modifiers", [])
+    if not isinstance(risk_modifiers, list):
+        risk_modifiers = []
+    if risk_class in MODIFIER_REQUIRED_RISKS and not risk_modifiers:
+        add(
+            findings,
+            "error",
+            "missing-risk-modifiers",
+            f"risk_class `{risk_class}` requires at least one entry in `risk_modifiers`.",
+            "Declare the operational hazards (e.g. secret_bearing, network_access) or record an escape hatch.",
+        )
+
     if metadata_path and not any(f["severity"] == "error" for f in findings):
         verified_level = 0
 
@@ -151,6 +239,19 @@ def check(component_dir: Path, target_level: int) -> dict[str, Any]:
             add(findings, "error", "missing-output-schema", "Level 1 requires a structured output schema.", "Reference result-envelope or a component output schema.")
         if not (has_nonempty(commands, "test") or has_nonempty(commands, "smoke")):
             add(findings, "error", "missing-test-command", "Level 1 requires test or smoke command evidence.", "Add commands.test or commands.smoke.")
+        for cmd_key in ("test", "smoke", "lint", "dry_run", "replay", "housekeeping"):
+            cmd_value = commands.get(cmd_key)
+            if not isinstance(cmd_value, str) or not cmd_value.strip():
+                continue
+            for token, exists in resolve_command_paths(component_dir, cmd_value):
+                if not exists:
+                    add(
+                        findings,
+                        "error",
+                        f"command-path-missing-{cmd_key}",
+                        f"commands.{cmd_key} references `{token}` which does not exist under {component_dir}.",
+                        "Fix the path or remove the command from METADATA.yml.",
+                    )
         if not any(f["severity"] == "error" for f in findings):
             verified_level = 1
 
@@ -173,6 +274,32 @@ def check(component_dir: Path, target_level: int) -> dict[str, Any]:
             add(findings, "error", "missing-continuation", "Level 3 requires continuation behavior.", "Add observability.continuation_packet.")
         if not has_nonempty(commands, "housekeeping") and not has_nonempty(housekeeping, "discovery_pollution_check"):
             add(findings, "error", "missing-housekeeping", "Level 3 requires housekeeping proof.", "Add commands.housekeeping or housekeeping.discovery_pollution_check.")
+        if surface in TELEMETRY_EMITTING_SURFACES or observability.get("trace_id") is True:
+            if not has_nonempty(observability, "semconv_version"):
+                add(
+                    findings,
+                    "error",
+                    "missing-semconv-version",
+                    "Level 3 telemetry-emitting components must pin an OpenTelemetry GenAI semconv version.",
+                    "Add observability.semconv_version (e.g., \"1.40\") or record an escape hatch.",
+                )
+        composite_declared = metadata.get("composite") is True
+        try:
+            tools_count = int(metadata.get("tools_count", 0))
+        except (TypeError, ValueError):
+            tools_count = 0
+        if composite_declared or tools_count > 1:
+            ok, message = validate_composite_envelope(component_dir)
+            if not ok:
+                add(
+                    findings,
+                    "error",
+                    "composite-envelope-invalid",
+                    f"Composite component failed envelope audit: {message}.",
+                    "Provide examples/envelope.json with a `steps` array; every step must carry a `trace_id`.",
+                )
+            else:
+                evidence.append({"type": "composite-envelope", "path": "examples/envelope.json"})
         if not any(f["severity"] == "error" for f in findings):
             verified_level = 3
 
@@ -185,8 +312,17 @@ def check(component_dir: Path, target_level: int) -> dict[str, Any]:
             "conformance-linter-output.schema.json",
         ]
         for schema_name in required_schemas:
-            if not (schema_dir / schema_name).exists():
-                add(findings, "error", f"missing-{schema_name}", f"Level 4 requires {schema_name}.", "Add the schema or record a governed escape hatch.")
+            ok, message = validate_schema_file(schema_dir / schema_name)
+            if not ok:
+                add(
+                    findings,
+                    "error",
+                    f"schema-invalid-{schema_name}",
+                    f"Level 4 schema `{schema_name}` failed validation: {message}.",
+                    "Repair or replace the schema, or record a governed escape hatch.",
+                )
+            else:
+                evidence.append({"type": "schema", "path": f"schemas/{schema_name}"})
         if not has_nonempty(metadata, "owner"):
             add(findings, "error", "missing-owner", "Level 4 requires an owner.", "Add owner to METADATA.yml.")
         if not has_nonempty(metadata, "review_cadence"):
@@ -219,10 +355,16 @@ def main() -> int:
     parser.add_argument("component_dir", nargs="?", default=".", help="Component or protocol package directory.")
     parser.add_argument("--level", type=int, default=1, choices=range(0, 5), help="Target level 0..4.")
     parser.add_argument("--json", action="store_true", help="Emit JSON only.")
+    parser.add_argument("--report", type=str, default=None, help="Write conformance-report.json to this path.")
     args = parser.parse_args()
 
     component_dir = Path(args.component_dir).resolve()
     result = check(component_dir, args.level)
+
+    if args.report:
+        report_path = Path(args.report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
 
     if args.json:
         print(json.dumps(result, indent=2))

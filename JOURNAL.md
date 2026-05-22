@@ -400,6 +400,8 @@ The conformance ladder decides how much proof is needed.
 | Full SLSA/SSDF/SCVS for every script | Constrained | Apply by risk and conformance level. |
 | Generic MCP shell executor | Rejected by default | Too broad; use sandbox adapter with scoped clients and approval. |
 | Composite god-tool | Rejected | Composites need sharp intent and step-level evidence. |
+| Agent Client Protocol (ACP) adapter in v1.5 | Deferred to v1.6 candidate | ACP standardizes editor↔agent (JSON-RPC) the way LSP standardizes editor↔language-server; v1.5 covers agent↔tool (MCP) but not editor↔agent. Add when first ARH component exposes an agent to an editor. |
+| Agent-to-Agent (A2A / UAP) adapter in v1.5 | Deferred to v1.6 candidate | Multi-agent handoff (Sentinel ↔ Codex ↔ Kimi ↔ Gemini) is currently encoded as continuation packets only. A dedicated A2A adapter is warranted once a second cross-agent interaction beyond continuation appears. |
 
 ---
 

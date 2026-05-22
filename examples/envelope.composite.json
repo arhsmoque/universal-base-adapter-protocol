@@ -1,0 +1,47 @@
+{
+  "$schema": "../schemas/result-envelope.schema.json",
+  "status": "success",
+  "component": "example-composite-tool",
+  "trace_id": "evt_0123456789abcdef",
+  "schema_version": "1.0",
+  "summary": "Reference example: how a composite tool exposes per-step trace IDs so the linter and downstream agents can correlate failures to the offending primitive.",
+  "steps": [
+    {
+      "name": "fetch",
+      "primitive": "http.get",
+      "trace_id": "evt_0123456789abcdef.step.1",
+      "status": "success",
+      "evidence": [
+        { "type": "http_status", "value": 200 },
+        { "type": "bytes", "value": 4096 }
+      ]
+    },
+    {
+      "name": "parse",
+      "primitive": "json.parse",
+      "trace_id": "evt_0123456789abcdef.step.2",
+      "status": "success",
+      "evidence": [
+        { "type": "fields_seen", "value": 12 }
+      ]
+    },
+    {
+      "name": "write",
+      "primitive": "fs.write",
+      "trace_id": "evt_0123456789abcdef.step.3",
+      "status": "success",
+      "evidence": [
+        { "type": "path", "value": "out/result.json" },
+        { "type": "bytes", "value": 2048 }
+      ],
+      "dry_run": false,
+      "idempotency_key": "sha256:abc..."
+    }
+  ],
+  "errors": [],
+  "usage": {
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "wall_ms": 142
+  }
+}

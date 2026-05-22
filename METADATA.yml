@@ -48,13 +48,15 @@ commands:
   smoke: "python scripts/check_conformance.py . --level 1 --json"
   dry_run: ""
   replay: "python scripts/check_conformance.py . --level 4 --json"
-  housekeeping: "verify schemas/, templates/, adapters/, and reference/ contain no scratch artifacts"
+  housekeeping: ""
 
 observability:
   trace_id: true
   event_log: "conformance checker JSON output"
   failure_artifacts: "conformance checker findings"
   continuation_packet: "findings[].agent_action"
+  semconv_version: "1.40"
+  semconv_namespace: "gen_ai"
 
 housekeeping:
   scratch_paths: []

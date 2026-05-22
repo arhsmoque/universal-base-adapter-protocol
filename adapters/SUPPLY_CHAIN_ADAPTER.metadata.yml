@@ -1,0 +1,28 @@
+component: "supply-chain-adapter"
+version: "1.5.0"
+schema_version: "1.0"
+protocol: "Universal Base/Adapter Design and Coding Protocol v1.5"
+conformance_level: 2
+surface: "docs"
+risk_class: "read_only"
+risk_modifiers: []
+status: "experimental"
+owner: "ARH governance"
+review_cadence: "monthly until promoted to active"
+
+notes: |
+  The Supply Chain adapter is the newest v1.5 addition. Its provenance, SBOM,
+  and pin-policy expectations have not been validated against a real adopter
+  pipeline. Treat as provisional until promoted to `status: active` via a
+  REVIEW_DECISION_NOTE.
+
+dependencies:
+  - "external: SLSA provenance (proportional adoption, Level 3+)"
+  - "external: NIST SSDF (proportional adoption, Level 3+)"
+  - "external: OWASP SCVS (proportional adoption, Level 3+)"
+
+promotion_criteria:
+  - "At least two real components have shipped a Level 3 supply-chain adapter implementation."
+  - "Smoke test verifying pin-by-version and rollback path has been exercised."
+  - "Proportional-adoption guidance (which standards apply at which level) has been validated."
+  - "A v1.6 (or v1.5.x) REVIEW_DECISION_NOTE has approved the active status."
