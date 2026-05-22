@@ -964,9 +964,21 @@ async function init() {
 
   storeConfig = cfg ? { ...DEFAULT_CONFIG.store, ...cfg } : { ...DEFAULT_CONFIG.store };
   applyTheme(theme || DEFAULT_CONFIG.theme);
+
+  // Backfill new config fields (type, style, sub, title…) into existing Firebase records.
+  // Firebase values always win — gaps are filled from config defaults.
+  const configCatById  = {};
+  DEFAULT_MENU.categories.forEach(c => configCatById[c.id] = c);
+  const configItemById = {};
+  DEFAULT_MENU.items.forEach(i => configItemById[i.id] = i);
+
   menuData = {
-    categories: cats ? Object.values(cats) : DEFAULT_MENU.categories,
-    items: items ? Object.values(items) : DEFAULT_MENU.items
+    categories: cats
+      ? Object.values(cats).map(cat => ({ ...(configCatById[cat.id] || {}), ...cat }))
+      : DEFAULT_MENU.categories,
+    items: items
+      ? Object.values(items).map(item => ({ ...(configItemById[item.id] || {}), ...item }))
+      : DEFAULT_MENU.items
   };
 
   // Only seed Firebase when the fetch actually reached the server AND the path is empty.

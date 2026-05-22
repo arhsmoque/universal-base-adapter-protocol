@@ -941,10 +941,19 @@ async function saveStoreField(field, val) {
 // ════════════════════════════════════════════════════════════
 async function loadMenuData() {
   await safe(async () => {
+    const configCatById  = {};
+    APP_CONFIG.defaultMenu.categories.forEach(c => configCatById[c.id] = c);
+    const configItemById = {};
+    APP_CONFIG.defaultMenu.items.forEach(i => configItemById[i.id] = i);
+
     const snap = await fbGet('menu/items');
-    menuItems = snap ? Object.values(snap) : [];
+    menuItems = snap
+      ? Object.values(snap).map(item => ({ ...(configItemById[item.id] || {}), ...item }))
+      : [];
     const cats = await fbGet('menu/categories');
-    menuCats  = cats ? Object.values(cats) : APP_CONFIG.defaultMenu.categories;
+    menuCats = cats
+      ? Object.values(cats).map(cat => ({ ...(configCatById[cat.id] || {}), ...cat }))
+      : APP_CONFIG.defaultMenu.categories;
     renderCatList();
     updateCatDropdown();
     renderMenuList();
