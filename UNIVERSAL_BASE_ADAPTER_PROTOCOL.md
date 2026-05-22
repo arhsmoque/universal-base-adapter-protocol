@@ -159,7 +159,170 @@ Do not turn everything into a tool. Prompts guide, resources inform, tools act.
 
 ---
 
-## 4. Risk and Security Before Contract
+## 4. Naming Convention and Discoverability
+
+Names are part of the interface. In an agent-operated environment, a name is not just for humans typing commands; it is a routing signal used during discovery, tool selection, search, replay, and future scriptable edits.
+
+### Naming objective
+
+Optimize for the reader and the future agent, not for the original author. Prefer a slightly longer self-describing name over a short ambiguous name.
+
+```text
+Good name = role + domain/object + action/outcome + useful qualifier
+```
+
+A good name should answer, without opening the file or schema:
+
+```text
+What is this?
+When or where is it used?
+What does it act on?
+What outcome does it produce?
+Is it safe/read-only or mutating?
+```
+
+### Agent hesitation test
+
+Before finalizing any discoverable name, ask:
+
+```text
+If an agent sees this name in a directory listing, tool catalog, command list, or search result, will it know whether to open or use it?
+```
+
+If the answer is no, add the missing word or rename the artifact.
+
+| Weak | Better | Why |
+|---|---|---|
+| `guard.ps1` | `pre-tool-output-guard.ps1` | phase + target + action |
+| `reconcile.ps1` | `post-session-reconcile.ps1` | timing and object are visible |
+| `kf-cards` | `known-failure-cards` | abbreviation expanded for discovery |
+| `runner.py` | `workflow-replay-runner.py` | purpose and mode are clear |
+| `search` | `search_content` | object disambiguates operation |
+
+### Length rule
+
+For artifacts discovered by name, default to **2-4 meaningful words**. Use 3-4 words when phase, target, or risk would otherwise be ambiguous.
+
+| Artifact | Preferred form | Example |
+|---|---|---|
+| Directory | kebab-case noun phrase | `known-failure-cards/` |
+| File/script | kebab-case role phrase + extension | `pre-tool-output-guard.ps1` |
+| CLI command | short scoped command, kebab-case | `arh-build`, `sentinel status` |
+| MCP/tool/function exposed to model | snake_case intent/action | `find_and_outline`, `diagnose_recent_failure` |
+| Python function | snake_case | `create_project_structure` |
+| TypeScript/JavaScript function | project convention, usually camelCase | `createProjectStructure` |
+| Constants/env vars | SCREAMING_SNAKE_CASE | `MAX_REPLAY_EVENTS` |
+| Resource path | slash-separated resource hierarchy | `projects/{project}/runs/{run}` |
+| Metadata/config key | one style per file | `risk_class`, `trace_id` |
+
+Avoid 5+ word names unless the artifact is rare and safety-critical. If a name needs more than 5 words, split the concept or move qualifiers into metadata.
+
+### Tool and composite naming
+
+Agent-facing tools should be named by user intent or outcome, not backend topology.
+
+```text
+verb_object[_qualifier]
+```
+
+Use stable verbs consistently:
+
+| Verb | Meaning |
+|---|---|
+| `get` | retrieve one known item by stable ID/name |
+| `list` | enumerate a collection |
+| `search` | find by query/filter |
+| `read` | return content from a known source |
+| `inspect` | return metadata/structure/evidence |
+| `create` | create new resource |
+| `update` | modify existing resource |
+| `delete` | destructive removal; requires high-risk controls |
+| `prepare` | stage output or draft without committing |
+| `apply` | commit a staged mutation |
+| `replay` | re-run from recorded inputs/artifacts |
+| `diagnose` | analyze failure/evidence and return causes |
+| `summarize` | compress while preserving evidence references |
+
+Examples:
+
+| Weak | Better |
+|---|---|
+| `github_api_call` | `search_github_issues` |
+| `filesystem_tool` | `find_and_outline_files` |
+| `run_command` | `run_sandboxed_command` |
+| `do_sync` | `sync_calendar_events` |
+| `workflow` | `replay_saved_workflow` |
+
+MCP and function/tool names should use a portable subset: lowercase ASCII, numbers, and underscores. Use descriptions for nuance; do not pack policy into the name.
+
+### File and directory naming
+
+Files and folders should be search-friendly:
+
+- prefer kebab-case for scripts, docs, generated recipes, and folders;
+- avoid spaces, hidden abbreviations, and clever acronyms;
+- include phase words when lifecycle matters: `pre`, `post`, `staged`, `replay`, `archive`;
+- include risk/mode words when safety matters: `dry-run`, `approval`, `sandboxed`, `read-only`;
+- include adapter words only when the artifact truly belongs to that adapter: `mcp`, `cli`, `web`, `worker`;
+- do not include adapter/framework words in base modules unless the base itself is adapter-specific.
+
+### Resource and ID naming
+
+Resource names should be stable, canonical, and easy to store in logs. Prefer hierarchical names for durable resources and opaque IDs for generated runtime handles.
+
+```text
+projects/{project}/components/{component}
+projects/{project}/runs/{run}
+projects/{project}/artifacts/{artifact}
+```
+
+Rules:
+
+- expose a canonical `name` or `id` field in result envelopes for follow-up;
+- use `display_name` for human labels that can change;
+- keep canonical IDs lowercase, ASCII, URL-safe, and stable;
+- use aliases only for convenience, and always resolve them to the canonical name in output;
+- record deprecations and redirects when names change.
+
+### Abbreviation policy
+
+Abbreviations are allowed only when all are true:
+
+1. the abbreviation is domain-established or documented in `GLOSSARY.md` / `AGENTS.md`;
+2. the full phrase appears nearby in documentation or metadata;
+3. the abbreviation improves navigation rather than hiding meaning.
+
+Prefer `known-failure-cards` over `kf-cards` unless `KF` has already become a project-wide term of art.
+
+### Rename policy
+
+Renaming is a migration, not a cleanup whim.
+
+Before renaming a promoted artifact:
+
+- check references with LSP/search;
+- add alias/deprecation shim when external users or agents may call the old name;
+- update `AGENTS.md`, metadata, recipes, tests, and docs;
+- record the rename in the decision log or metadata;
+- verify old discovery paths fail clearly or redirect safely.
+
+Do not rename mechanically ported internals for taste. Preserve upstream names inside staged/ported code unless the name violates the target language or public adapter contract. Rename at the wrapper boundary instead.
+
+### Naming review checklist
+
+A name passes when:
+
+- it is inferable from a listing;
+- it uses the project convention for its surface;
+- it contains the key search terms future agents will use;
+- it avoids ambiguous generic words: `manager`, `helper`, `util`, `runner`, `processor`, `handler` unless qualified;
+- it does not expose backend topology where user intent is clearer;
+- it avoids unnecessary abbreviation;
+- it has a stable canonical ID or alias plan if externally referenced.
+
+---
+
+## 5. Risk and Security Before Contract
 
 Declare risk before freezing the base contract. Risk changes the base shape.
 
@@ -195,7 +358,7 @@ Security posture:
 
 ---
 
-## 5. Ready-Made First Salvage Ladder
+## 6. Ready-Made First Salvage Ladder
 
 Never start from blank design when an existing implementation or battle-tested pattern may exist.
 
@@ -231,7 +394,7 @@ Rejected candidates still matter: record why so later agents do not rediscover t
 
 ---
 
-## 6. Mechanical Porting Rule
+## 7. Mechanical Porting Rule
 
 Mechanical porting is not creative rewriting. It is used only after the salvage ladder has shown that direct use or wrapping is insufficient.
 
@@ -277,7 +440,7 @@ Mechanical porting preserves behavior first. Promotion then restores the base/ad
 
 ---
 
-## 7. Spec-First Build Packet
+## 8. Spec-First Build Packet
 
 Before new base logic is written, produce a compact spec. The spec is the implementation target and test oracle.
 
@@ -306,7 +469,7 @@ Do not make spec writing a paperwork sink. For small components, place this in `
 
 ---
 
-## 8. Deterministic Navigation and CodeDNA
+## 9. Deterministic Navigation and CodeDNA
 
 Agents should navigate by structure before scanning by text.
 
@@ -346,7 +509,7 @@ This is a local convention, not an external standard. Keep it short. Do not poll
 
 ---
 
-## 9. Result Envelope Standard
+## 10. Result Envelope Standard
 
 Every agent-facing adapter should return structured output first. Human prose is allowed as a `summary` field or display rendering, not as the only machine channel.
 
@@ -432,7 +595,7 @@ For machine mode, stdout must be exactly one JSON envelope or JSONL/NDJSON envel
 
 ---
 
-## 10. Budget and Continuation Contract
+## 11. Budget and Continuation Contract
 
 Any operation that can consume unbounded resources must accept a budget:
 
@@ -453,7 +616,7 @@ Rules:
 
 ---
 
-## 11. Composite and Workflow Promotion
+## 12. Composite and Workflow Promotion
 
 Primitives are necessary. Composites are earned.
 
@@ -488,7 +651,7 @@ Compiled workflows must be versioned, inspectable, replayable, budgeted, and pol
 
 ---
 
-## 12. Adapter Contracts
+## 13. Adapter Contracts
 
 ### CLI adapter
 
@@ -559,7 +722,7 @@ Required for `open_world` and destructive mutation unless an equivalent transact
 
 ---
 
-## 13. Supply Chain and Dependency Provenance
+## 14. Supply Chain and Dependency Provenance
 
 Ready-made-first does not mean dependency-blind.
 
@@ -581,7 +744,7 @@ For higher conformance levels, add SBOM/provenance checks, dependency scanning, 
 
 ---
 
-## 14. Implementation Sequence
+## 15. Implementation Sequence
 
 1. Read `AGENTS.md` and component metadata.
 2. Define intent, surface, risk class, and budget shape.
@@ -602,7 +765,7 @@ Do not start with the adapter unless the adapter shape is the actual design prob
 
 ---
 
-## 15. Conformance Ladder
+## 16. Conformance Ladder
 
 | Level | Name | Required proof |
 |---|---|---|
@@ -634,7 +797,7 @@ The protocol text explains intent. The files under `schemas/` define the machine
 
 ---
 
-## 16. Observability, Replay, and Event Records
+## 17. Observability, Replay, and Event Records
 
 Debugging is a design feature.
 
@@ -662,7 +825,7 @@ Use OpenTelemetry-compatible concepts where practical: traces for request/workfl
 
 ---
 
-## 17. Successful Path Capture and Scriptable Edit Recipes
+## 18. Successful Path Capture and Scriptable Edit Recipes
 
 Every successful non-trivial edit path should be treated as a candidate for future automation.
 
@@ -757,7 +920,7 @@ Path recipes should reduce search pollution, not add to it. Store them under a k
 
 ---
 
-## 18. Housekeeping Protocol
+## 19. Housekeeping Protocol
 
 Housekeeping is part of done.
 
@@ -789,7 +952,7 @@ Archive policy:
 
 ---
 
-## 19. Escape Hatch Doctrine
+## 20. Escape Hatch Doctrine
 
 The protocol is a control system, not a prison.
 
@@ -809,7 +972,7 @@ Do not silently bypass the protocol. If urgency requires a shortcut, leave a sho
 
 ---
 
-## 20. Anti-Patterns
+## 21. Anti-Patterns
 
 Reject or redesign when you see:
 
@@ -830,7 +993,7 @@ Reject or redesign when you see:
 
 ---
 
-## 21. Done Definition
+## 22. Done Definition
 
 A component is done when:
 

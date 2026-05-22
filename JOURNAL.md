@@ -460,7 +460,26 @@ Do not generate recipes for one-off trivia. Recipes must reduce future discovery
 
 ---
 
-## 18. Final baseline thesis
+## 18. Why naming convention belongs in the baseline
+
+Naming was originally treated as a style concern — a matter of taste left to linters or team preference. That changed when it became clear that agents discover files, tools, and functions by name before they open them.
+
+Names are routing signals. A poorly named file or function forces an agent to open, read, and infer intent before it can decide whether to use, wrap, or ignore the artifact. In a repository with dozens of scripts, skills, adapters, and composites, this discovery tax is paid repeatedly.
+
+The naming convention was elevated to protocol level because:
+
+- **Search quality:** agents use name-based discovery (glob, tool catalog, directory listing) before content search;
+- **Tool selection:** an MCP tool or CLI command named by user intent is chosen correctly more often than one named by backend topology;
+- **Adapter boundaries:** names that include phase or risk words (`dry-run`, `sandboxed`, `pre-`) help agents classify operations without reading code;
+- **Scriptable recipes:** recipe files must be discoverable by future agents; a name like `SCRIPTABLE_PATH_RECIPE.md` is self-selecting.
+
+The convention does not demand uniformity for uniformity's sake. It demands that a name answer the agent hesitation test: *If an agent sees this name in a listing, will it know whether to open or use it?*
+
+If the answer is no, the name is a bug.
+
+---
+
+## 19. Final baseline thesis
 
 v1.5 should be treated as stable because it is no longer just a set of preferences. It is a coherent operating model:
 
@@ -480,7 +499,7 @@ The baseline should now change slowly. Future revisions should usually be adapte
 
 ---
 
-## 19. Reviewer questions
+## 20. Reviewer questions
 
 A reviewer should judge future revisions with these questions:
 
@@ -497,7 +516,7 @@ A reviewer should judge future revisions with these questions:
 
 ---
 
-## 20. Reference anchors used during v1.5 vetting
+## 21. Reference anchors used during v1.5 vetting
 
 These references were used as external anchors for the v1.5 hardening pass. They informed the direction but were adopted proportionally rather than copied wholesale.
 
@@ -516,7 +535,7 @@ These references were used as external anchors for the v1.5 hardening pass. They
 
 ---
 
-## 21. What should not be forgotten
+## 22. What should not be forgotten
 
 The protocol began with a practical frustration: agents were wasting time rewriting solved tools.
 

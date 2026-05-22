@@ -53,6 +53,7 @@ Required invariants:
 - use dry-run/approval/idempotency for mutation;
 - clean scratch and candidate files before done.
 - record escape hatches when a protocol rule is bypassed.
+- follow the project naming convention so agents can discover artifacts by name without opening them;
 
 ## Risk Rules
 

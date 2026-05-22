@@ -1,5 +1,5 @@
 component: "universal-base-adapter-protocol"
-version: "1.5.1"
+version: "1.5.4"
 schema_version: "1.0"
 protocol: "Universal Base/Adapter Design and Coding Protocol v1.5"
 conformance_level: 4
