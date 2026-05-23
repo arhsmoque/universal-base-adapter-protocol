@@ -1,7 +1,7 @@
-# Universal Research Protocol (URP) v3.1.1
+# Universal Research Protocol (URP) v3.1.2
 
 **Name:** Universal Research Protocol  
-**Version:** 3.1.1  
+**Version:** 3.1.2  
 **Status:** Revised baseline candidate  
 **Purpose:** Gather source-grounded, high-quality patterns, references, gaps, and anti-patterns for downstream build planning (RBSP).  
 **Target environment:** Windows + PowerShell (`pwsh`) agent operation by default, while patterns from any ecosystem remain admissible when they can be salvaged, adapted, benchmarked, or used as warnings.
@@ -11,10 +11,12 @@
 ## 0. Position in Build Chain
 
 ```text
-User Need → URP (research) → RBSP (synthesis) → Implementation → Validation
+User Need → URP (research) → RBSP (synthesis) → ATBIP (implementation) → UBAP conformance gate → Runtime
 ```
 
 URP output must be directly usable by a downstream build planner without repeating the search.
+
+The full chain operates under the Universal Base/Adapter Protocol (UBAP v1.6). URP seeds the risk and surface fields that RBSP locks and ATBIP writes into METADATA.yml for the conformance gate.
 
 ---
 
@@ -61,6 +63,8 @@ Before searching, convert the user request into a compact research frame.
 - Required capabilities  
 - Known environment  
 - Risk sensitivity (`low | medium | high`)  
+- UBAP risk class (`read_only | local_mutation | external_mutation | destructive | open_world`) — translate risk sensitivity into the canonical UBAP term; carry forward to RBSP verbatim  
+- UBAP risk modifiers (`secret_bearing | regulated_data | network_access | filesystem_broad_scope | privileged_auth | generated_code_execution | payment_or_cost_impact`) — list all that apply; empty list is valid  
 - Downstream consumer (`RBSP | build planner | implementation agent`)  
 
 If the user asks for a tool, research both:
@@ -345,12 +349,14 @@ URP does not choose the final architecture. It prepares decision-grade material 
 
 A handoff is ready when the research output contains:
 
-- a compact research frame;
+- a compact research frame including `ubap_risk_class` and `ubap_risk_modifiers`;
 - candidate evidence with source kind, role, use mode, risk, freshness, deps, probe, and assertion;
 - top pattern cards where patterns are worth salvaging;
 - negative evidence when searches failed;
 - a gap map;
 - anti-patterns/rejections;
 - conflict resolution when candidates disagree.
+
+RBSP carries `ubap_risk_class` and `ubap_risk_modifiers` forward verbatim into the decision panel and ultimately into METADATA.yml. URP must not leave these blank when the build involves mutation, external calls, secrets, or filesystem writes.
 
 URP should not become a build plan. That is RBSP’s job.
