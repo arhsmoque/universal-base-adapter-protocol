@@ -1,4 +1,4 @@
-# Research-to-Build Synthesis Protocol (RBSP) v1.1
+# Research-to-Build Synthesis Protocol (RBSP) v1.2
 
 ## Purpose
 
@@ -37,6 +37,8 @@ URP v3.1.1 output fields map to RBSP inputs as follows:
 | `candidate.deps` / `freshness` / `agent_operability_tags` | Adoption criteria |
 | `gap_map` | Input for `build_from_scratch` decisions |
 | `anti_patterns` | Input for `reject` decisions |
+| `ubap_risk_class` | Carried verbatim into decision panel and METADATA.yml |
+| `ubap_risk_modifiers` | Carried verbatim into decision panel and METADATA.yml |
 
 RBSP does not re‑research. It synthesizes.
 
@@ -113,6 +115,27 @@ Before adopting or designing a component, check:
 
 If a tool makes the agent choose between low‑level backend options, the abstraction is too low.
 
+## 7.5 Naming Gate
+
+Before architecture synthesis locks any interface name, run the UBAP inferability test on every proposed tool name, command name, MCP tool slug, CLI command, and resource path.
+
+A name passes if a stateless agent seeing only the name can infer:
+- whether it reads or mutates;
+- what object it acts on;
+- whether it is broad or narrow in scope;
+- what output shape is likely;
+- whether it requires approval or dry-run.
+
+Apply UBAP naming conventions:
+- MCP tools / JSON functions: `snake_case` `verb_object[_qualifier]` — stable verbs: `get`, `list`, `search`, `read`, `create`, `update`, `delete`, `prepare`, `apply`, `replay`, `diagnose`, `summarize`, `verify`
+- CLI commands / scripts: `kebab-case-role-phrase`
+- Constants / env vars: `SCREAMING_SNAKE_CASE`
+- Directories: `kebab-case-noun-phrase`
+
+Any name that fails the test is renamed before synthesis continues. Do not lock a failing name and plan to rename later — adapter contracts built against weak names propagate the defect.
+
+See `reference/THE_ART_OF_NAMING.md` in the UBAP repository for deeper examples.
+
 ## 8. Architecture Synthesis
 
 Convert selected decisions into a compact architecture. Required elements:
@@ -130,6 +153,12 @@ security_boundary: ""
 agent_interface: ""
 dry_run_supported: true   # mandatory for write ops
 idempotency: "yes | with_key | no"
+# UBAP governance fields — carried into METADATA.yml by ATBIP step 1
+ubap_surface: "port_library | cli_adapter | api_web_adapter | mcp_adapter | worker_adapter"
+ubap_risk_class: ""        # from URP scope frame; one canonical value
+ubap_risk_modifiers: []    # from URP scope frame
+ubap_conformance_target: 1 # 0 = experimental, 1 = operable, 2 = platform
+provider_hint: "any | anthropic | openai | google"
 ```
 
 Use an ASCII diagram only when it reduces ambiguity.
@@ -205,6 +234,11 @@ Produce a compact Markdown design plan (under 250 lines):
 - Adoption decisions (use/wrap/extract/reject/build_from_scratch):
 - Main risk:
 - First implementation step:
+- ubap_surface:
+- ubap_risk_class:
+- ubap_risk_modifiers: []
+- ubap_conformance_target:
+- provider_hint:
 
 ## 2. Research Findings That Change the Build
 
@@ -282,6 +316,8 @@ Output is valid only if a builder can answer:
 - How will success be tested?
 - What risks can reopen the decision?
 - Where is the URP verification probe applied?
+- What is the UBAP surface, risk class, and conformance target? (required — ATBIP cannot scaffold METADATA.yml without these)
+- Do all proposed interface names pass the §7.5 inferability test?
 
 If the answer is “read the URP output again,” RBSP failed.
 ```

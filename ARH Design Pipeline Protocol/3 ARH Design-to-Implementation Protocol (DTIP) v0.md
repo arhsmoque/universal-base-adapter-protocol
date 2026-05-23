@@ -1,4 +1,4 @@
-# Agent Tool Build & Implementation Protocol (ATBIP) v1.1.1
+# Agent Tool Build & Implementation Protocol (ATBIP) v1.2.0
 
 **Purpose:** Turn an RBSP Build Specification into a working, tested, agent‑operable tool. Starts after RBSP. Does not redesign.
 
@@ -38,8 +38,14 @@ ATBIP expects an RBSP Build Specification containing at least:
 - `implementation_units` (list)
 - `validation_plan` (test types and verification probes)
 - `risk_register` (or note that none exist)
+- `ubap_surface` — canonical UBAP surface type
+- `ubap_risk_class` — canonical UBAP risk class
+- `ubap_risk_modifiers` — list (may be empty)
+- `ubap_conformance_target` — 0, 1, or 2
+- `provider_hint` — intended agent runtime
 
-If missing, mark `input_status: "blocked"` and return the missing list.  
+If any of the first three are missing, mark `input_status: "blocked"` and return the missing list.  
+If the UBAP fields are missing, default `ubap_conformance_target` to 1 and log a warning — do not block, but note the gap in the handoff.  
 Do not improvise architecture – only implementation.
 
 ## 4. Build Readiness Gate
@@ -55,6 +61,7 @@ Before coding, verify:
 | Validation plan | Smoke, failure, dry‑run (if writes), idempotency (if retryable) tests exist |
 | Risk register | High‑risk actions have mitigation (dry‑run, confirmation) |
 | Environment fit | Runtime/toolchain available or install path defined |
+| UBAP fields present | `ubap_surface`, `ubap_risk_class`, `ubap_conformance_target` available from RBSP |
 
 No mutating implementation starts until read/write boundaries and dry‑run are specified.
 
@@ -75,7 +82,7 @@ tests_required: [] # test types from Section 12
 
 ## 6. Build Order
 
-1. Scaffold and schemas  
+1. Scaffold, schemas, and METADATA.yml — generate `METADATA.yml` from RBSP decision panel fields (`ubap_surface`, `ubap_risk_class`, `ubap_risk_modifiers`, `ubap_conformance_target`, `provider_hint`). Set `commands.smoke` from RBSP verification probe. Set `owner` and `version`. Use `templates/METADATA.yml` from the UBAP repository as the base. METADATA.yml is a build artifact, not a handoff artifact — create it now, update it as the build proceeds.  
 2. Core pure logic  
 3. State/config layer (if needed)  
 4. Error/result envelope  
@@ -86,7 +93,8 @@ tests_required: [] # test types from Section 12
 9. Test harness (including verification probes)  
 10. Packaging/install scripts  
 11. Documentation  
-12. Handoff packet  
+12. Recipe capture — if the build path is non-trivial and likely to recur, distill the successful route into a recipe entry for `recipes/index.yml`. Minimum fields: `name`, `description`, `inputs`, `execution_strategy`, `dry_run`, `verification`. If the path is one-off or trivially short, record `recipe: none — one-off` in METADATA.yml. Do not skip this step silently.  
+13. Handoff packet  
 
 ## 7. Folder Structure (recommended)
 
@@ -194,11 +202,28 @@ The smoke test must execute the verification probe from URP (or derived from RBS
 
 ## 16. Validation Ladder
 
-Schema validates → core unit tests pass (if any) → failure tests pass → dry‑run tests pass → smoke test passes → packaging test passes (if applicable) → handoff complete.
+Schema validates → core unit tests pass (if any) → failure tests pass → dry‑run tests pass → smoke test passes → packaging test passes (if applicable) → **UBAP conformance gate passes** → handoff complete.
+
+**UBAP conformance gate:** run `python -B scripts/check_conformance.py <component_dir> --level <ubap_conformance_target> --json` from the UBAP repository against the component directory. The result must show `verified_level >= ubap_conformance_target` with no `"severity": "error"` findings. If the gate fails, findings become implementation deviations — record in §17 and resolve before handoff. A component does not exit ATBIP at its claimed conformance level until the checker agrees.
+
+Bash fallback (Linux agents): `python -B scripts/check_conformance.py <component_dir> --level <ubap_conformance_target> --json`
 
 ## 17. Deviation Handling
 
 Any deviation from RBSP must be recorded with: deviation, reason, risk, and condition to reopen decision. Deviations block handoff unless explicitly accepted by user or RBSP designer.
+
+When a deviation bypasses a UBAP protocol rule (not merely RBSP intent), a deviation table row is not sufficient. Also produce an `ESCAPE_HATCH_NOTE.md` entry meeting all six UBAP conditions:
+
+| Condition | Meaning |
+|-----------|---------|
+| **Named** | Clear, unique identifier for this bypass |
+| **Scoped** | Exactly which UBAP rule is bypassed, and where |
+| **Justified** | Why the rule cannot be followed in this case |
+| **Bounded** | When/how the bypass ends or is revisited |
+| **Observable** | How a future agent can detect the bypass is still in effect |
+| **Recoverable** | How to restore full compliance if the constraint changes |
+
+If uncertain whether a deviation crosses a UBAP rule, consult `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md §14`.
 
 ## 18. Install Contract
 
@@ -223,28 +248,58 @@ For larger builds, also CHANGELOG.md and troubleshooting.md as needed.
 
 ## 20. Handoff Output
 
-Produce a single handoff packet (Markdown):
+ATBIP produces two distinct artifacts. They serve different consumers and must not be merged.
+
+### 20a. ATBIP Completion Summary (post-build record)
+
+Produced once at build completion. Human and agent readable. Permanent record.
 
 ```markdown
-# ATBIP Handoff: [Build Name]
+# ATBIP Completion Summary: [Build Name]
 
 ## Built artifacts
 - Files:
 - Commands:
+- METADATA.yml: (path)
+- UBAP conformance: verified_level=N, target=N, gate=pass|fail
 
 ## Verification
 - Smoke test command (verification probe):
 - Probe result: (pass/fail + evidence)
 - All required tests passed: yes/no (list if no)
+- UBAP conformance gate: pass|fail (findings if fail)
 
 ## Deviations from RBSP
-| Deviation | Reason | Risk | Reopen if |
-|-----------|--------|------|-----------|
+| Deviation | Reason | Risk | Reopen if | ESCAPE_HATCH_NOTE? |
+|-----------|--------|------|-----------|---------------------|
+
+## Recipe captured
+- recipes/index.yml entry: yes | no — one-off
 
 ## Known limitations
 ## Next actions for maintainer
 ## Do not repeat (anti‑pattern reminders)
 ```
+
+### 20b. UBAP Continuation Packet (mid-task handoff)
+
+Produced when the build is interrupted and handed to a different agent mid-flight. Uses the UBAP `handoff-packet.json` schema. Must be valid JSON.
+
+```json
+{
+  "intent": "short statement of overall build goal",
+  "completed_steps": ["step descriptions matching §6 build order"],
+  "remaining_work": "next step and what is unfinished",
+  "continuation_token": "opaque reference to build state artifact or null",
+  "budget_left": 0,
+  "provider_hint": "any | anthropic | openai | google",
+  "attachments": ["path/to/METADATA.yml", "path/to/rbsp-spec.md"]
+}
+```
+
+The receiving agent reads the continuation packet, loads `attachments`, and resumes at `remaining_work`. It does not re-read URP or RBSP from scratch.
+
+Produce 20b whenever `budget_left` is low, context is near limit, or an explicit handoff is requested. Produce 20a only at build completion.
 
 ## 21. Quality Bar
 
@@ -257,7 +312,12 @@ ATBIP output is valid only if:
 - Write operations have dry‑run and idempotency (or key).  
 - Tests cover smoke, failure, dry‑run, idempotency.  
 - Install/run/smoke commands are documented and tested.  
-- Deviations from RBSP are recorded.  
+- Deviations from RBSP are recorded; UBAP rule bypasses also have `ESCAPE_HATCH_NOTE.md`.  
+- METADATA.yml exists and is filled from RBSP fields.  
+- UBAP conformance gate passed at `ubap_conformance_target` level.  
+- Recipe captured in `recipes/index.yml` or explicitly marked one-off.  
+- Completion Summary (20a) produced at build end.  
+- Continuation Packet (20b) produced if build was interrupted or handed off mid-flight.  
 
 A future agent can install, run, validate, debug, and extend the tool without re‑reading URP or RBSP.
 
