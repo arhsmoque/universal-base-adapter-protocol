@@ -24,10 +24,13 @@ Kimi sessions tend to be longer-lived; refresh the read-order at the start of ea
 
 ## Command preferences
 
-- Primary shell: PowerShell 7 (`pwsh`).
-- Conformance gate before any merge or push:
-  ```powershell
+- Primary shell: PowerShell 7 (`pwsh`) when available. Kimi runs on Linux — use bash fallback directly:
+  ```bash
   python -B scripts/check_conformance.py . --level 4 --json
+  ```
+  To validate a downstream component (not this repo itself), pass its directory:
+  ```bash
+  python -B scripts/check_conformance.py /path/to/component --level 1 --json
   ```
 
 ## Output style
@@ -38,6 +41,9 @@ Kimi sessions tend to be longer-lived; refresh the read-order at the start of ea
 
 ## Known quirks for Kimi in this repo
 
-- Kimi may produce over-engineered abstractions on first pass — prefer the salvage ladder (Use → Wrap → Mechanical Port → Extract → Build).
-- Long-context summarization can erase nuance; cite file:line when proposing changes.
+- Kimi may produce over-engineered abstractions on first pass — prefer the salvage ladder (Use → Wrap → Mechanical Port → Extract → Build). If a design has more than three new components, re-examine whether existing tools cover the need.
+- Long-context summarization can erase nuance; cite file:line when proposing changes to any protocol file.
 - Tool-call schemas must match `schemas/result-envelope.json` and `schemas/handoff-packet.json` exactly — do not improvise field names.
+- Kimi's planning output can grow very long; keep the RBSP decision panel under 250 lines and the ATBIP handoff under 150 lines. Depth belongs in referenced artifacts, not in the primary document.
+- Kimi sessions are often long-lived but the agent is stateless between calls — refresh the read order at the start of each task. Do not assume prior context is available.
+- When Kimi deviates from RBSP design during implementation, it must record a deviation entry immediately rather than deferring to the handoff. Silent in-flight deviations cannot be recovered at review time.

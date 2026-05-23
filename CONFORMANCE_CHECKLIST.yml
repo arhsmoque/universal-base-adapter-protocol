@@ -1,0 +1,16 @@
+# Live conformance checklist for this repository (universal-base-adapter-protocol v1.6.0)
+# All items are true — this repo is the protocol package itself (surface: docs, risk_class: read_only)
+# For the blank template used by downstream components, see templates/CONFORMANCE_CHECKLIST.yml
+
+has_metadata: true                  # METADATA.yml present and filled
+has_declared_surface: true          # surface: docs
+has_declared_risk: true             # risk_class: read_only
+has_structured_output: true         # conformance checker emits result-envelope JSON
+has_tests: true                     # commands.test: python -m py_compile scripts/check_conformance.py
+has_dry_run_for_mutation: true      # n/a — read_only surface; no mutations
+has_replay_for_level_2: true        # replay = re-running conformance check is idempotent
+has_budget_for_unbounded_work: true # n/a — conformance check is bounded by repo size
+has_continuation_for_partial_work: true  # n/a — single-pass validation
+has_recipe_for_repeated_path: true  # recipes/index.yml contains run-conformance-check
+has_housekeeping_pass: true         # no scratch files; archive/ contains only v1.5 provenance
+passes_smoke_tests: true            # python -B scripts/check_conformance.py . --level 4 --json → verified_level=4

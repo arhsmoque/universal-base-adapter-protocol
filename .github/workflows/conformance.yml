@@ -1,0 +1,50 @@
+name: UBAP Conformance Gate
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  conformance:
+    name: Protocol conformance (Level 4)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Syntax check conformance script
+        run: python -B -m py_compile scripts/check_conformance.py
+
+      - name: Validate JSON schemas
+        run: |
+          find schemas -name '*.json' | while read f; do
+            python -m json.tool "$f" > /dev/null && echo "OK: $f" || { echo "FAIL: $f"; exit 1; }
+          done
+
+      - name: Run UBAP conformance gate (Level 4)
+        run: |
+          python -B scripts/check_conformance.py . --level 4 --json | tee conformance-report.json
+          python -c "
+          import json, sys
+          r = json.load(open('conformance-report.json'))
+          errors = [f for f in r.get('findings', []) if f['severity'] == 'error']
+          if errors:
+              for e in errors:
+                  print(f\"[ERROR] {e['id']}: {e['message']}\", file=sys.stderr)
+              sys.exit(2)
+          print(f\"Conformance: verified_level={r['verified_level']}, target={r['target_level']}\")
+          "
+
+      - name: Upload conformance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-report
+          path: conformance-report.json

@@ -35,13 +35,15 @@ This repository contains the Universal Base/Adapter Protocol v1.6. It is a gover
 
 ## Commands
 
-- Conformance: `python -B scripts/check_conformance.py . --level 4 --json`
+- Conformance (this repo): `python -B scripts/check_conformance.py . --level 4 --json`
+- Conformance (downstream component): `python -B scripts/check_conformance.py /path/to/component --level 1 --json`
 - Python syntax: `python -B -m py_compile scripts/check_conformance.py`
-- JSON schema parse check:
+- JSON schema parse check (bash): `find schemas -name '*.json' | xargs -I{} python -m json.tool {} > /dev/null`
+- Housekeeping: `find . -name '__pycache__' -type d | xargs rm -rf 2>/dev/null; find . -name '*.pyc' -delete`
 
-```powershell
-Get-ChildItem -LiteralPath schemas -Filter '*.json' | ForEach-Object { python -m json.tool $_.FullName > $null }
-```
+### Conformance checker scope
+
+The conformance checker validates any directory that contains a `METADATA.yml`. Run it against this repo root (`.`) to validate the protocol package itself, or against any downstream component directory to validate that component. The level flag sets the target: `0` = experimental, `1` = operable, `2` = platform. Always run at the level the component claims in `METADATA.yml`. A passing result at Level N means the checker found all required evidence for N; it does not inspect application correctness. See `examples/level-1-component/` for a worked example of a compliant Level 1 component.
 
 ## Protocol Invariants
 

@@ -1,1 +1,111 @@
-recipes: []
+recipes:
+
+  - name: run-conformance-check
+    description: Validate a component or this protocol repo against a target UBAP conformance level
+    inputs:
+      - name: component_dir
+        type: string
+        default: "."
+        description: Path to the component directory containing METADATA.yml
+      - name: level
+        type: integer
+        default: 4
+        description: Target conformance level (0-4)
+    execution_strategy: python
+    command: "python -B scripts/check_conformance.py {component_dir} --level {level} --json"
+    dry_run: false
+    verification: "output contains \"status\": \"success\" and \"verified_level\" >= level"
+    notes: >
+      Run from the UBAP repo root. Pass the component's own directory for downstream validation.
+      Exit code 0 = pass, 1 = warnings, 2 = errors.
+
+  - name: create-level-0-component
+    description: Scaffold a new Level 0 (experimental) component with METADATA.yml from template
+    inputs:
+      - name: component_dir
+        type: string
+        description: Target directory for the new component
+      - name: name
+        type: string
+        description: Component name (used in METADATA.yml)
+      - name: surface
+        type: string
+        description: "UBAP surface: port_library | cli_adapter | api_web_adapter | mcp_adapter | worker_adapter"
+      - name: risk_class
+        type: string
+        description: "UBAP risk class: read_only | local_mutation | external_mutation | destructive | open_world"
+    execution_strategy: shell
+    steps:
+      - "mkdir -p {component_dir}"
+      - "cp templates/METADATA.yml {component_dir}/METADATA.yml"
+      - "# Edit {component_dir}/METADATA.yml: set name, surface, risk_class, conformance_level: 0"
+      - "cp templates/CONFORMANCE_CHECKLIST.yml {component_dir}/CONFORMANCE_CHECKLIST.yml"
+    dry_run: true
+    verification: "python -B scripts/check_conformance.py {component_dir} --level 0 --json | grep '\"status\": \"success\"'"
+    notes: >
+      After scaffolding, fill in METADATA.yml fields: name, intent, surface, risk_class, commands.smoke.
+      Conformance level 0 requires only intent, risk, and a passing smoke command.
+
+  - name: promote-level-0-to-level-1
+    description: Checklist and edits to promote a Level 0 component to Level 1 (operable)
+    inputs:
+      - name: component_dir
+        type: string
+        description: Path to the existing Level 0 component directory
+    execution_strategy: shell
+    steps:
+      - "# 1. Add structured output envelope to the component's primary output"
+      - "# 2. Add commands.test or commands.smoke to METADATA.yml"
+      - "# 3. Add contracts.output_schema pointing to result-envelope.json or a component schema"
+      - "# 4. For mutation components: add dry-run support and set contracts.dry_run: true"
+      - "# 5. Update METADATA.yml conformance_level: 1"
+      - "# 6. Run conformance check"
+      - "python -B scripts/check_conformance.py {component_dir} --level 1 --json"
+    dry_run: false
+    verification: "python -B scripts/check_conformance.py {component_dir} --level 1 --json | grep '\"verified_level\": 1'"
+    notes: >
+      Level 1 requires: structured output contract, test or smoke command, and dry-run for
+      any mutation surface. The conformance checker will list exact missing fields on failure.
+
+  - name: produce-ubap-continuation-packet
+    description: Emit a UBAP continuation packet when handing off a mid-flight task to another agent
+    inputs:
+      - name: intent
+        type: string
+        description: Short statement of the overall task goal
+      - name: completed_steps
+        type: list
+        description: Steps completed so far (plain strings)
+      - name: remaining_work
+        type: string
+        description: Next step and what is unfinished
+      - name: budget_left
+        type: integer
+        description: Approximate remaining token/operation budget (0 if unknown)
+      - name: provider_hint
+        type: string
+        default: "any"
+        description: "Intended agent runtime: any | anthropic | openai | google"
+      - name: attachments
+        type: list
+        default: []
+        description: Paths to artifacts the receiving agent needs (METADATA.yml, spec, etc.)
+    execution_strategy: python
+    template: |
+      import json
+      packet = {
+          "intent": "<intent>",
+          "completed_steps": ["<step1>", "<step2>"],
+          "remaining_work": "<next step description>",
+          "continuation_token": None,
+          "budget_left": 0,
+          "provider_hint": "any",
+          "attachments": ["path/to/METADATA.yml"]
+      }
+      print(json.dumps(packet, indent=2))
+    dry_run: false
+    verification: "output validates against schemas/handoff-packet.json"
+    notes: >
+      Produce this packet before context limit is hit or when explicitly handing off.
+      The receiving agent loads attachments and resumes at remaining_work.
+      Do not require the receiving agent to re-read URP or RBSP from scratch.
