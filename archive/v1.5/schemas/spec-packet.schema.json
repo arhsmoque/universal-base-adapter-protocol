@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://arh.local/schemas/universal-base-adapter/spec-packet.schema.json",
+  "title": "Universal Base/Adapter Spec Packet",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["spec"],
+  "properties": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["component", "intent", "surface", "risk_class", "input_contract", "output_contract", "error_cases", "example_traces", "invariants", "verification"],
+      "properties": {
+        "component": { "type": "string" },
+        "intent": { "type": "string" },
+        "surface": {
+          "type": "string",
+          "enum": ["base", "cli", "web", "api", "mcp", "worker", "skill", "docs", "lsp", "sandbox"]
+        },
+        "risk_class": {
+          "type": "string",
+          "enum": ["read_only", "local_mutation", "external_mutation", "destructive", "open_world"]
+        },
+        "risk_modifiers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "input_contract": { "type": ["object", "string"] },
+        "output_contract": { "type": ["object", "string"] },
+        "error_cases": { "type": "array" },
+        "example_traces": { "type": "array" },
+        "invariants": { "type": "array" },
+        "budget": { "type": "object" },
+        "verification": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "smoke": { "type": "string" },
+            "failure": { "type": "string" },
+            "contract": { "type": "string" },
+            "mutation_dry_run": { "type": "string" },
+            "replay": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

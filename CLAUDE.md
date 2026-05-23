@@ -7,17 +7,17 @@ This file translates `AGENTS.md` into Claude-Code / Claude-API execution.
 
 1. `AGENTS.md` (canonical instructions, precedence rules, risk rules)
 2. `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md` (only the sections relevant to the active surface)
-3. The single adapter under `adapters/` for the surface being changed
+3. The single adapter under `adapters/` (core surfaces) or `advanced/` (LSP/sandbox/skill) for the surface being changed
 4. The single template under `templates/` if a packet is being authored
 
 Do not pre-load the full corpus. Progressive disclosure applies: load on demand.
 
 ## File-mutation authority
 
-- Mutations to `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md`, schemas, or adapters require a `DECISION_PACKET.md` and a passing `python -B scripts/check_conformance.py . --level 4 --json`.
+- Mutations to `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md`, schemas, or adapters require a passing `python -B scripts/check_conformance.py . --level 4 --json` and an `ESCAPE_HATCH_NOTE.md` if any protocol rule is bypassed.
 - Mutations to templates require updating `JOURNAL.md` with the rationale.
 - Never edit `JOURNAL.md` history entries; append only.
-- Never edit `REVIEW_DECISION_NOTE_v1_*.md`; create a new one for new revisions.
+- Do not edit files under `archive/`.
 
 ## Escape-hatch authority
 

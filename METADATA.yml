@@ -1,7 +1,7 @@
 component: "universal-base-adapter-protocol"
-version: "1.5.4"
+version: "1.6.0"
 schema_version: "1.0"
-protocol: "Universal Base/Adapter Design and Coding Protocol v1.5"
+protocol: "Universal Base/Adapter Protocol v1.6"
 conformance_level: 4
 surface: "docs"
 risk_class: "read_only"
@@ -12,24 +12,24 @@ review_cadence: "on protocol change or quarterly"
 
 architecture:
   base: "UNIVERSAL_BASE_ADAPTER_PROTOCOL.md"
-  adapters: ["adapters/"]
-  rules_config: "GOVERNANCE_IMPLEMENTATION_GUIDE.md"
+  adapters: ["adapters/", "advanced/"]
+  rules_config: "AGENTS.md"
   ports: []
 
 salvage:
   decision: "build_from_scratch"
   source: "local protocol review and external standards validation"
-  version: "v1.5"
+  version: "v1.6"
   license: ""
   rationale: "Cross-agent governance baseline for design-domain adapters."
-  provenance: "JOURNAL.md and EMERGING_PATTERN_VETTING_NOTE_v1_5.md"
+  provenance: "JOURNAL.md"
   smoke_test: "python scripts/check_conformance.py . --level 4 --json"
-  rollback_path: "revert to prior protocol package version and keep review decision note"
+  rollback_path: "revert to archive/v1.5/ package version"
 
 contracts:
-  input_schema: "schemas/metadata.schema.json"
-  output_schema: "schemas/conformance-linter-output.schema.json"
-  error_taxonomy: "CONFORMANCE_LINTER_SPEC.md findings"
+  input_schema: "schemas/result-envelope.json"
+  output_schema: "schemas/result-envelope.json"
+  error_taxonomy: "scripts/check_conformance.py findings"
   idempotency: "read-only documentation and validation package"
   dry_run: false
   approval_required: false

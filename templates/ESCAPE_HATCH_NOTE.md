@@ -1,11 +1,10 @@
-# Exception / Escape Hatch Note
+# Escape Hatch Note
 
 - Rule bypassed:
 - Scope:
-- Reason normal path is unsuitable:
-- Risk introduced:
-- Mitigation:
-- Expiry or review trigger:
-- Evidence / verification:
-- Cleanup or migration path:
-- Owner:
+- Justification:
+- Bound:
+- Observability record:
+- Recovery path:
+- Reviewer notes:
+- Expiry condition:

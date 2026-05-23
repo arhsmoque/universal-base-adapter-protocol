@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UBAP Result Envelope",
+  "type": "object",
+  "required": [
+    "status",
+    "trace_id"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "success",
+        "partial_success",
+        "failure",
+        "blocked",
+        "budget_exceeded"
+      ]
+    },
+    "data": {
+      "type": "object"
+    },
+    "message": {
+      "type": "string"
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "duration_ms": {
+      "type": "number"
+    },
+    "evidence": {
+      "type": "array"
+    },
+    "warnings": {
+      "type": "array"
+    },
+    "errors": {
+      "type": "array"
+    },
+    "continuation_token": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

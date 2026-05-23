@@ -7,15 +7,15 @@ This file translates `AGENTS.md` for OpenAI Codex-CLI / Codex-hosted agents.
 
 1. `AGENTS.md` (Codex-CLI loads this automatically — verify the load occurred)
 2. `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md` — sections relevant to the active surface only
-3. The single adapter under `adapters/` for the surface being changed
+3. The single adapter under `adapters/` (core surfaces) or `advanced/` (LSP/sandbox/skill) for the surface being changed
 4. The single template under `templates/` when authoring a packet
 
 Codex-CLI's project-instructions auto-loading means `AGENTS.md` is the canonical entry point — do not duplicate its content here.
 
 ## File-mutation authority
 
-- Protocol/schema/adapter changes require a `DECISION_PACKET.md` and a passing conformance run.
-- Append-only for `JOURNAL.md` and `REVIEW_DECISION_NOTE_*.md`.
+- Protocol/schema/adapter changes require a passing conformance run; leave `ESCAPE_HATCH_NOTE.md` if any rule is bypassed.
+- Append-only for `JOURNAL.md`. Do not edit files under `archive/`.
 - Codex's batch-edit mode must not regenerate templates from scratch — patch surgically.
 
 ## Escape-hatch authority
