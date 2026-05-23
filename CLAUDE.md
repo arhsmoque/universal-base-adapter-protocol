@@ -27,13 +27,17 @@ Do not pre-load the full corpus. Progressive disclosure applies: load on demand.
 ## Command preferences
 
 - Primary shell: PowerShell 7 (`pwsh`). Use `pwsh` syntax for any new scripts.
-- Conformance gate before any merge or push:
-  ```powershell
+- Conformance gate before any merge or push — bash and pwsh both work:
+  ```bash
   python -B scripts/check_conformance.py . --level 4 --json
   ```
-- JSON-schema parse spot-check:
-  ```powershell
-  Get-ChildItem -LiteralPath schemas -Filter '*.json' | ForEach-Object { python -m json.tool $_.FullName > $null }
+  To validate a downstream component (not this repo itself), pass its directory:
+  ```bash
+  python -B scripts/check_conformance.py /path/to/component --level 1 --json
+  ```
+- JSON-schema parse spot-check (bash):
+  ```bash
+  find schemas -name '*.json' | xargs -I{} python -m json.tool {} > /dev/null
   ```
 
 ## Output style
@@ -47,3 +51,6 @@ Do not pre-load the full corpus. Progressive disclosure applies: load on demand.
 - Claude Code on Windows uses Git Bash for `Bash` tool but PowerShell-style paths for the project. Quote Windows paths in Bash.
 - Do not chain `cd <repo> && git ...` — git already runs in the working tree; the chain triggers a permission prompt.
 - Prefer `Edit` over full-file `Write` for any file already on disk.
+- Long sessions risk context compaction: before approaching context limit on a multi-step task, emit a UBAP continuation packet (20b format from ATBIP) so the next session can resume without re-reading prior history.
+- Claude's parallel tool calls are efficient but can produce interleaved writes to the same file — always verify file state after parallel `Edit` chains before committing.
+- Do not add comments explaining WHAT code does; only add comments for hidden constraints, subtle invariants, or workarounds. Protocol files especially must not accumulate narrative comments.

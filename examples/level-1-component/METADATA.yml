@@ -1,0 +1,37 @@
+component: "list-project-runs"
+version: "0.1.0"
+schema_version: "1.0"
+protocol: "Universal Base/Adapter Protocol v1.6"
+conformance_level: 1
+surface: "cli_adapter"
+risk_class: "read_only"
+risk_modifiers: []
+status: "active"
+owner: "example — replace with real owner"
+review_cadence: "on change"
+
+architecture:
+  base: "core/runs.py"
+  adapters: ["cli_adapter.py"]
+  rules_config: "config.yml"
+  ports: ["RunPort"]
+
+salvage:
+  status: "built_from_scratch"
+  candidates: []
+  rejected: []
+
+contracts:
+  input_schema: ""
+  output_schema: "../../schemas/result-envelope.json"
+  dry_run: false
+  approval_required: false
+  idempotency: "read-only; naturally idempotent"
+
+commands:
+  smoke: "python cli_adapter.py --project example-project --json"
+  test: "python -m pytest tests/ -q"
+  lint: ""
+  dry_run: ""
+  replay: ""
+  housekeeping: "find . -name '__pycache__' -type d | xargs rm -rf"

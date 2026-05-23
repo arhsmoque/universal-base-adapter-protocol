@@ -48,7 +48,7 @@ commands:
   smoke: "python scripts/check_conformance.py . --level 1 --json"
   dry_run: ""
   replay: "python scripts/check_conformance.py . --level 4 --json"
-  housekeeping: ""
+  housekeeping: "python -B scripts/housekeeping.py"
 
 observability:
   trace_id: true

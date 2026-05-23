@@ -25,10 +25,13 @@ Codex-CLI's project-instructions auto-loading means `AGENTS.md` is the canonical
 
 ## Command preferences
 
-- Primary shell: PowerShell 7 (`pwsh`). Codex-CLI defaults to bash on macOS/Linux — for this repo, prefer `pwsh` invocations even from bash.
-- Conformance gate:
-  ```powershell
+- Primary shell: PowerShell 7 (`pwsh`) when available. Codex-CLI runs on Linux/macOS without pwsh — use bash fallback directly:
+  ```bash
   python -B scripts/check_conformance.py . --level 4 --json
+  ```
+  To validate a downstream component (not this repo itself), pass its directory:
+  ```bash
+  python -B scripts/check_conformance.py /path/to/component --level 1 --json
   ```
 
 ## Output style
@@ -38,6 +41,9 @@ Codex-CLI's project-instructions auto-loading means `AGENTS.md` is the canonical
 
 ## Known quirks for Codex in this repo
 
-- Codex's auto-apply mode can rewrite imports unnecessarily — disable for protocol files.
+- Codex's auto-apply mode can rewrite imports unnecessarily — disable for protocol files. Review every import change before accepting.
 - File paths must be Windows-style under `D:\00_ARH\`; do not let Codex normalize to POSIX.
 - Codex's "explanation" output should not be committed to repository files — keep it in chat.
+- Codex may regenerate an entire file when asked to patch a single section — always prefer surgical edits. If Codex rewrites a template or adapter from scratch, reject and retry with an explicit instruction to patch only the named section.
+- Codex batch-edit mode does not always preserve trailing newlines or exact indentation — run `python -B scripts/check_conformance.py` after any batch edit to verify schema files are still valid JSON.
+- When Codex performs a multi-step task and runs out of context mid-way, it should emit a UBAP continuation packet before stopping rather than silently truncating output.
