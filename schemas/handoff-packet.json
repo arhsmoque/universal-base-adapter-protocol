@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UBAP Handoff Packet",
+  "type": "object",
+  "required": [
+    "intent",
+    "completed_steps",
+    "remaining_work"
+  ],
+  "properties": {
+    "intent": {
+      "type": "string"
+    },
+    "completed_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "remaining_work": {
+      "type": "string"
+    },
+    "continuation_token": {
+      "type": "string"
+    },
+    "budget_left": {
+      "type": "integer"
+    },
+    "provider_hint": {
+      "type": "string"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

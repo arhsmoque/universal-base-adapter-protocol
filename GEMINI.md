@@ -7,15 +7,15 @@ This file translates `AGENTS.md` for Gemini-CLI / Gemini-API agents.
 
 1. `AGENTS.md` (precedence, risk rules, output rules)
 2. `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md` — sections relevant to the active surface only
-3. The single adapter for the active surface under `adapters/`
+3. The single adapter under `adapters/` (core surfaces) or `advanced/` (LSP/sandbox/skill)
 4. The single template under `templates/` when authoring a packet
 
 Gemini-CLI's large context window encourages loading the full corpus. Do not. Use progressive disclosure.
 
 ## File-mutation authority
 
-- Schema, protocol, or adapter changes: require a `DECISION_PACKET.md` and a passing conformance run.
-- Gemini may not regenerate `JOURNAL.md` or `REVIEW_DECISION_NOTE_*.md` from scratch — append-only.
+- Schema, protocol, or adapter changes: require a passing conformance run; leave `ESCAPE_HATCH_NOTE.md` if any rule is bypassed.
+- Gemini may not regenerate `JOURNAL.md` from scratch — append-only. Do not edit files under `archive/`.
 
 ## Escape-hatch authority
 

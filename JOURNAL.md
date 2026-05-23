@@ -1,8 +1,8 @@
-# JOURNAL.md — Design History for Universal Base/Adapter Protocol v1.5
+# JOURNAL.md — Design History for Universal Base/Adapter Protocol
 
-**Protocol:** Universal Base/Adapter Design and Coding Protocol  
-**Baseline:** v1.5  
-**Purpose:** Help reviewers reason through the choices, exclusions, tradeoffs, and evolution that shaped the v1.5 baseline from the initial tool-salvaging draft.
+**Protocol:** Universal Base/Adapter Protocol  
+**Current baseline:** v1.6 (see entry dated 2026-05-23)
+**Purpose:** Help reviewers reason through the choices, exclusions, tradeoffs, and evolution that shaped each baseline. Append only — never edit historical entries.
 
 ---
 
@@ -546,3 +546,69 @@ Stop paying repeated reasoning cost for decisions that can be encoded once.
 ```
 
 That is the heart of v1.5.
+
+---
+
+## 2026-05-23: v1.6 — Grounding the protocol in field practice
+
+This entry records why v1.6 exists and how the protocol was tightened for real agent-operated work.
+
+### Terminology moved toward ports and adapters
+
+The earlier wording used "base" as the main architectural noun because it was easy to explain. In practice, external reviewers and stateless agents recognise "ports and adapters" more quickly. v1.6 therefore aligns the main model with that vocabulary while preserving the original intent: isolate invariant behavior from delivery surfaces.
+
+The important refinement is that the core owns business behavior while ports declare the interfaces. Adapters translate runtime details into those interfaces. This keeps the protocol accurate for reviewers familiar with hexagonal architecture and still practical for agents.
+
+### Boundary ambiguity was moved out of the core protocol
+
+The port/adapter boundary can blur in real projects. A CLI may contain validation. An MCP tool may need safety checks. A web handler may contain auth extraction. Embedding every nuance in the main protocol would make it too heavy for runtime use.
+
+The protocol now keeps a small boundary test in the main file and moves examples to `reference/PORT_ADAPTER_BOUNDARY_NOTES.md`. This gives agents a fast default path and reviewers a deeper guide when needed.
+
+### Surface types were reduced to the core five
+
+The earlier baseline carried many surface types. That was accurate but heavy. v1.6 keeps five core surfaces: port library, CLI adapter, API/Web adapter, MCP adapter, and worker adapter.
+
+LSP, sandbox, prompt/skill, telemetry exporter, and supply-chain verification remain important, but they are treated as advanced adapters or separate components under `advanced/`. This keeps the main protocol teachable while leaving room for expansion.
+
+### Salvage became explicitly multi-agent
+
+The user's environment separates upstream research from local building. A research agent or URP run finds candidates, pattern sources, gaps, and rejected paths. A local build agent consumes that packet instead of repeating the whole search.
+
+v1.6 keeps "ready-made first" mandatory for reusable work, but it no longer pretends one agent must do every step. For Level 2 work, the build agent needs a `salvage_request` or must stay at Level 0 until research exists.
+
+### Naming became semantic before stylistic
+
+Earlier naming rules covered formatting, but the deeper problem is inferability. Agents do not merely read names; they route on names. A weak name makes the agent hesitate, choose a primitive, or open multiple files unnecessarily.
+
+v1.6 moves intent, user-facing vs agent-facing distinction, world-view clarity, and risk inference before formatting. `reference/THE_ART_OF_NAMING.md` carries the longer guide.
+
+### Conformance was compressed
+
+The five-level ladder was useful during design, but too heavy for daily use. v1.6 reduces it to three levels: Experimental, Operable, and Platform. This preserves promotion pressure without making every small tool feel like enterprise governance.
+
+The conformance gate is now a machine-readable checklist (`templates/CONFORMANCE_CHECKLIST.yml`) rather than a large review ceremony. This is cheaper for agents and easier to automate.
+
+### Done definition became smaller but sharper
+
+The done definition was reduced to the essentials: intent/risk/surface, boundary clarity, structured output, tests, dry-run for mutation, successful path recipe, and housekeeping.
+
+The new recipe requirement is important. When an agent discovers a successful edit path, that path becomes an asset. Capturing it prevents future agents from spending expensive context to rediscover the same route.
+
+### Budgets, continuation, and handoff were promoted
+
+Field practice showed that long sessions fail when agents lose context, repeat research, or cannot resume partial work. v1.6 adds compact handoff packets (`schemas/handoff-packet.json`), budgets, continuation tokens, and result fields that explain user goal, cost/value, and reasoning mode.
+
+The goal is not to expose private reasoning. The goal is to leave enough structured state for the next agent to continue safely.
+
+### Repository restructuring
+
+v1.5 adapter files were consolidated and renamed for clarity. The `adapters/` directory now contains only the four core surfaces. Advanced surfaces (LSP, sandbox, skill) moved to `advanced/`. Reference guides split into `reference/PORT_ADAPTER_BOUNDARY_NOTES.md` and `reference/THE_ART_OF_NAMING.md`. All replaced v1.5 files are archived under `archive/v1.5/INDEX.md`.
+
+### External anchors used in v1.6
+
+The revision was checked against established references: ports-and-adapters/hexagonal architecture for the boundary model; AGENTS.md for agent instruction placement; MCP security guidance for least privilege; JSON Lines for streaming structured CLI output; OpenTelemetry for observability vocabulary; SemVer for version signaling; NIST SSDF and SLSA for secure development and supply-chain posture.
+
+### Final stance
+
+v1.6 is intended as a stable operational baseline. Future changes should usually be adapter-specific unless a new cross-domain pattern clearly improves agent safety, replayability, maintainability, or cost.

@@ -1,0 +1,12 @@
+has_metadata: false
+has_declared_surface: false
+has_declared_risk: false
+has_structured_output: false
+has_tests: false
+has_dry_run_for_mutation: false
+has_replay_for_level_2: false
+has_budget_for_unbounded_work: false
+has_continuation_for_partial_work: false
+has_recipe_for_repeated_path: false
+has_housekeeping_pass: false
+passes_smoke_tests: false

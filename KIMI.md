@@ -6,7 +6,7 @@ This file translates `AGENTS.md` for Kimi (Moonshot) agents.
 ## Read order (Kimi)
 
 1. `AGENTS.md` (precedence, risk rules, output rules)
-2. The single adapter for the active surface under `adapters/`
+2. The single adapter under `adapters/` (core surfaces) or `advanced/` (LSP/sandbox/skill)
 3. `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md` — only the sections referenced from that adapter
 4. The single template under `templates/` when authoring a packet
 
@@ -14,8 +14,8 @@ Kimi sessions tend to be longer-lived; refresh the read-order at the start of ea
 
 ## File-mutation authority
 
-- Protocol, schema, or adapter edits require `DECISION_PACKET.md` and a passing conformance run.
-- Append-only for `JOURNAL.md`. No rewrites of historical entries.
+- Protocol, schema, or adapter edits require a passing conformance run; leave `ESCAPE_HATCH_NOTE.md` if any rule is bypassed.
+- Append-only for `JOURNAL.md`. No rewrites of historical entries. Do not edit files under `archive/`.
 
 ## Escape-hatch authority
 
@@ -40,4 +40,4 @@ Kimi sessions tend to be longer-lived; refresh the read-order at the start of ea
 
 - Kimi may produce over-engineered abstractions on first pass — prefer the salvage ladder (Use → Wrap → Mechanical Port → Extract → Build).
 - Long-context summarization can erase nuance; cite file:line when proposing changes.
-- Tool-call schemas must match `schemas/*.schema.json` exactly — do not improvise field names.
+- Tool-call schemas must match `schemas/result-envelope.json` and `schemas/handoff-packet.json` exactly — do not improvise field names.

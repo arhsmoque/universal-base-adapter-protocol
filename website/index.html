@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UBAP v1.6 Validation Site</title>
+<style>
+:root{--bg:#0f172a;--panel:#111827;--muted:#94a3b8;--text:#e5e7eb;--accent:#38bdf8;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--border:#334155}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(135deg,#020617,#0f172a 45%,#111827);color:var(--text);line-height:1.55}a{color:var(--accent)}header{padding:56px 24px 24px;max-width:1180px;margin:auto}h1{font-size:clamp(2rem,4vw,4rem);line-height:1.05;margin:0 0 16px}.subtitle{font-size:1.15rem;color:var(--muted);max-width:900px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1180px;margin:24px auto;padding:0 24px}.card{background:rgba(17,24,39,.82);border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.22)}.card h2,.card h3{margin-top:0}.tag{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:4px 10px;color:var(--muted);font-size:.85rem;margin:4px 6px 4px 0}.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pill{background:#082f49;border:1px solid #075985;border-radius:999px;padding:8px 12px}.arrow{color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:.95rem}td,th{border-bottom:1px solid var(--border);padding:10px;text-align:left;vertical-align:top}th{color:#bfdbfe}.checklist label{display:flex;gap:10px;align-items:flex-start;margin:10px 0;color:#dbeafe}.checklist input{margin-top:5px}.score{font-size:2rem;font-weight:800}.ok{color:var(--good)}.mid{color:var(--warn)}.low{color:var(--bad)}pre{white-space:pre-wrap;background:#020617;border:1px solid var(--border);padding:14px;border-radius:12px;overflow:auto}.footer{max-width:1180px;margin:24px auto 60px;padding:0 24px;color:var(--muted)}button{border:0;background:var(--accent);color:#00111f;font-weight:700;border-radius:12px;padding:10px 14px;cursor:pointer}button.secondary{background:#1f2937;color:var(--text);border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<header>
+  <span class="tag">UBAP v1.6</span><span class="tag">Ports & Adapters</span><span class="tag">Agent-Operable</span><span class="tag">Salvage First</span>
+  <h1>Universal Base/Adapter Protocol Validation Site</h1>
+  <p class="subtitle">A reviewer-facing map of the v1.6 baseline: what it governs, why it exists, and how to check whether a component follows the protocol without reading every file first.</p>
+</header>
+
+<section class="grid">
+  <div class="card">
+    <h2>Core Thesis</h2>
+    <p>The user expresses intent. The core owns invariant behavior. Adapters translate runtime details. Rules hold tunable policy. Metadata records provenance. Results describe observable reality.</p>
+  </div>
+  <div class="card">
+    <h2>Design Shape</h2>
+    <div class="flow"><span class="pill">Core / Ports</span><span class="arrow">→</span><span class="pill">Adapters</span><span class="arrow">→</span><span class="pill">Structured Result</span><span class="arrow">→</span><span class="pill">Replay / Recipe</span></div>
+  </div>
+  <div class="card">
+    <h2>Salvage Ladder</h2>
+    <div class="flow"><span class="pill">Use</span><span class="arrow">→</span><span class="pill">Wrap</span><span class="arrow">→</span><span class="pill">Port</span><span class="arrow">→</span><span class="pill">Extract</span><span class="arrow">→</span><span class="pill">Build</span></div>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h3>Boundary Test</h3>
+    <table><tr><th>Question</th><th>Layer</th></tr><tr><td>Invariant across all runtimes?</td><td>Core / Port</td></tr><tr><td>Translates CLI, HTTP, MCP, UI?</td><td>Adapter</td></tr><tr><td>Tunable policy or default?</td><td>Rules / Config</td></tr><tr><td>Why this exists or source proof?</td><td>Metadata</td></tr></table>
+  </div>
+  <div class="card">
+    <h3>Risk Classes</h3>
+    <table><tr><th>Risk</th><th>Minimum control</th></tr><tr><td>read_only</td><td>evidence, freshness, pagination</td></tr><tr><td>local_mutation</td><td>dry-run, diff, rollback note</td></tr><tr><td>external_mutation</td><td>approval, idempotency, audit</td></tr><tr><td>destructive</td><td>staged commit, explicit approval</td></tr><tr><td>open_world</td><td>sandbox, allowlist, timeout</td></tr></table>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card checklist">
+    <h2>Reviewer Checklist</h2>
+    <label><input type="checkbox"> Intent, risk, and surface are declared.</label>
+    <label><input type="checkbox"> Core / Port / Adapter / Rules boundary is clear.</label>
+    <label><input type="checkbox"> Structured output envelope is present and tested.</label>
+    <label><input type="checkbox"> Mutation has dry-run and verification.</label>
+    <label><input type="checkbox"> Salvage decision is recorded.</label>
+    <label><input type="checkbox"> Successful path recipe exists or is marked one-off.</label>
+    <label><input type="checkbox"> Housekeeping removed search-polluting artifacts.</label>
+    <p class="score" id="score">0%</p>
+    <button onclick="calc()">Calculate</button> <button class="secondary" onclick="resetChecks()">Reset</button>
+  </div>
+  <div class="card">
+    <h2>Result Envelope Skeleton</h2>
+    <pre>{
+  "status": "success | partial_success | failure | blocked | budget_exceeded",
+  "data": {},
+  "message": "short summary",
+  "trace_id": "trace-id",
+  "duration_ms": 0,
+  "evidence": [],
+  "warnings": [],
+  "errors": [],
+  "continuation_token": null
+}</pre>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h2>Conformance Ladder</h2>
+    <table><tr><th>Level</th><th>Name</th><th>Proof</th></tr><tr><td>0</td><td>Experimental</td><td>Intent, risk, smoke command</td></tr><tr><td>1</td><td>Operable</td><td>Structured output, tests, dry-run for mutation</td></tr><tr><td>2</td><td>Platform</td><td>Versioned schema, replay, budgets, continuation</td></tr></table>
+  </div>
+  <div class="card">
+    <h2>Naming Test</h2>
+    <p>A name passes when a new agent can infer intent, object, side effect, risk, and output shape without opening the file first.</p>
+    <p><span class="tag">Good</span> diagnose_recent_failure</p>
+    <p><span class="tag">Weak</span> runner2</p>
+  </div>
+</section>
+
+<div class="footer">
+  <p>This site is a review aid. The canonical protocol remains the Markdown file in this pack.</p>
+</div>
+<script>
+function calc(){const boxes=[...document.querySelectorAll('input[type=checkbox]')];const checked=boxes.filter(b=>b.checked).length;const pct=Math.round((checked/boxes.length)*100);const el=document.getElementById('score');el.textContent=pct+'%';el.className='score '+(pct>=85?'ok':pct>=55?'mid':'low')}
+function resetChecks(){document.querySelectorAll('input[type=checkbox]').forEach(b=>b.checked=false);calc()}
+calc()
+</script>
+</body>
+</html>

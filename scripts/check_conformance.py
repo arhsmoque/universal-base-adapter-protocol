@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Dependency-free conformance checker for Universal Base/Adapter Protocol v1.5."""
+"""Dependency-free conformance checker for Universal Base/Adapter Protocol v1.6."""
 
 from __future__ import annotations
 
@@ -14,7 +14,11 @@ from typing import Any
 
 
 RISK_CLASSES = {"read_only", "local_mutation", "external_mutation", "destructive", "open_world"}
-SURFACES = {"base", "cli", "web", "api", "mcp", "worker", "skill", "docs", "lsp", "sandbox"}
+# v1.5 surface names retained for backward compat; v1.6 names added
+SURFACES = {
+    "base", "cli", "web", "api", "mcp", "worker", "skill", "docs", "lsp", "sandbox",
+    "port_library", "cli_adapter", "api_web_adapter", "mcp_adapter", "worker_adapter", "other",
+}
 MUTATION_RISKS = {"local_mutation", "external_mutation", "destructive", "open_world"}
 MODIFIER_REQUIRED_RISKS = {"external_mutation", "destructive"}
 TELEMETRY_EMITTING_SURFACES = {"cli", "web", "api", "mcp", "worker", "sandbox"}
@@ -305,12 +309,16 @@ def check(component_dir: Path, target_level: int) -> dict[str, Any]:
 
     if target_level >= 4:
         schema_dir = component_dir / "schemas"
-        required_schemas = [
+        # v1.6 required schemas; fall back to v1.5 names when v1.6 names are absent
+        v16_required = ["result-envelope.json", "handoff-packet.json"]
+        v15_legacy = [
             "metadata.schema.json",
             "result-envelope.schema.json",
             "spec-packet.schema.json",
             "conformance-linter-output.schema.json",
         ]
+        using_v16_schemas = any((schema_dir / s).exists() for s in v16_required)
+        required_schemas = v16_required if using_v16_schemas else v15_legacy
         for schema_name in required_schemas:
             ok, message = validate_schema_file(schema_dir / schema_name)
             if not ok:
