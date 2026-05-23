@@ -1,0 +1,30 @@
+{
+  "$schema": "./design.config.schema.json",
+  "version": 1,
+  "designTokens": {
+    "fontFamily": {
+      "sans": ["Inter", "system-ui"],
+      "serif": ["Georgia", "serif"],
+      "mono": ["monospace"]
+    },
+    "primaryColor": "#2563EB",
+    "energyDefault": "precise",
+    "spacingScale": "comfortable",
+    "borderRadius": "default",
+    "motionSpeed": "normal",
+    "shadowIntensity": "default",
+    "containerMaxWidth": "standard",
+    "focusRing": {
+      "color": "#2563EB",
+      "width": "2px",
+      "offset": "2px"
+    },
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px",
+      "2xl": "1536px"
+    }
+  }
+}
