@@ -8,6 +8,7 @@ Start here:
 2. `JOURNAL.md`
 3. `reference/PORT_ADAPTER_BOUNDARY_NOTES.md`
 4. `reference/THE_ART_OF_NAMING.md`
-5. `website/index.html`
+5. `reference/PROJECT_AGENT_READINESS_AUDIT.md`
+6. `website/index.html`
 
 Use the website for quick reviewer validation and the Markdown files for canonical governance.

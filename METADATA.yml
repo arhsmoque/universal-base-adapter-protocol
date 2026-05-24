@@ -14,6 +14,10 @@ architecture:
   base: "UNIVERSAL_BASE_ADAPTER_PROTOCOL.md"
   adapters: ["adapters/", "advanced/"]
   rules_config: "AGENTS.md"
+  reference_protocols:
+    - "reference/PORT_ADAPTER_BOUNDARY_NOTES.md"
+    - "reference/THE_ART_OF_NAMING.md"
+    - "reference/PROJECT_AGENT_READINESS_AUDIT.md"
   ports: []
 
 salvage:

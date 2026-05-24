@@ -612,3 +612,49 @@ The revision was checked against established references: ports-and-adapters/hexa
 ### Final stance
 
 v1.6 is intended as a stable operational baseline. Future changes should usually be adapter-specific unless a new cross-domain pattern clearly improves agent safety, replayability, maintainability, or cost.
+
+---
+
+## 2026-05-24: PARA — project agent-readiness audit companion protocol
+
+This entry records the addition of `reference/PROJECT_AGENT_READINESS_AUDIT.md`.
+
+### Origin
+
+The protocol was extracted from a field audit of a multi-store FnB webapp. The audit began with normal debugging and expanded into workflow hardening: branch drift, store provisioning, Firebase auth, Cloudflare naming, Imgur setup, Python/uv runtime pinning, script naming, stale-doc scans, and journaled decision records.
+
+### Decision
+
+PARA is a UBAP companion protocol, not a replacement for UBAP.
+
+UBAP defines the structural contract: core/base, port, adapter, rules/config, recipe, artifact, drift control.
+
+PARA checks whether a project workflow is actually operable by weak, stateless, or future agents.
+
+### Adaptive scale
+
+The protocol is deliberately adaptive:
+
+- Small projects use Lite PARA: naming, runtime, dependency, and dry-run/syntax checks.
+- Medium projects use Standard PARA: workflow simulation, boundary, scriptability, auth/runtime/docs checks, validation, and journal entry.
+- Large projects use Full PARA: end-to-end scenario rehearsal, read-only verifier before mutator, external-service and drift checks, runtime reproducibility, docs-chain update, stale-reference scan, and journal decision record.
+
+This prevents small MCP/CLI tools from inheriting full-stack ceremony while making full-stack and multi-tenant workflows prove agent-readiness before they are called done.
+
+### Done definition update
+
+The core done definition now requires medium and large operating workflows to have a scale-appropriate Project Agent-Readiness Audit or an escape hatch explaining why it was deferred.
+
+### Documentation chain
+
+Updated:
+
+- `README.md`
+- `AGENTS.md`
+- `METADATA.yml`
+- `UNIVERSAL_BASE_ADAPTER_PROTOCOL.md`
+- `UNIVERSAL_BASE_ADAPTER_PROTOCOL_v1.6.md`
+
+### Rationale
+
+The key lesson is that useful agent work should not end as private reasoning. If a session discovers a future workflow risk, the result should become a script, a clearer name, a validation gate, a doc-chain update, or a protocol rule.

@@ -19,6 +19,7 @@ This repository contains the Universal Base/Adapter Protocol v1.6. It is a gover
 3. Relevant adapter under `adapters/` (core surfaces) or `advanced/` (LSP, sandbox, skill)
 4. Relevant template under `templates/`
 5. `reference/PORT_ADAPTER_BOUNDARY_NOTES.md` when promoting or refactoring a component
+6. `reference/PROJECT_AGENT_READINESS_AUDIT.md` when declaring a workflow agent-safe, adding deployment/release automation, or building medium/large projects
 
 ## Directory Map
 
@@ -26,7 +27,7 @@ This repository contains the Universal Base/Adapter Protocol v1.6. It is a gover
 |---|---|
 | `adapters/` | CLI, MCP, API/Web, Worker adapter contracts |
 | `advanced/` | LSP, Sandbox, Skill adapter contracts |
-| `reference/` | Anti-patterns, boundary notes, naming guide |
+| `reference/` | Anti-patterns, boundary notes, naming guide, project agent-readiness audit |
 | `schemas/` | `result-envelope.json`, `handoff-packet.json` |
 | `templates/` | METADATA.yml, CONFORMANCE_CHECKLIST.yml, ESCAPE_HATCH_NOTE.md, SPEC_PACKET.md, AGENTS.template.md |
 | `recipes/` | Indexed scriptable path recipes (`recipes/index.yml`) |
@@ -49,6 +50,7 @@ Get-ChildItem -LiteralPath schemas -Filter '*.json' | ForEach-Object { python -m
 - Keep agent-specific execution notes thin and pointer-based.
 - Do not change schemas without checking prose/schema consistency.
 - Do not promote a component level without visible proof in metadata, schemas, commands, or review notes.
+- For medium/large workflow changes, run a scale-appropriate Project Agent-Readiness Audit (`reference/PROJECT_AGENT_READINESS_AUDIT.md`) or record an escape hatch.
 - Record escape hatches when a protocol rule is bypassed.
 
 ## Risk Rules

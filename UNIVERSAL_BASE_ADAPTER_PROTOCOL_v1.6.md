@@ -343,6 +343,7 @@ A component is done when:
 - Tests cover smoke, failure, output contract, and at least one mutation behavior when applicable.
 - Dry-run works for all mutation surfaces.
 - A reusable recipe captures the successful path or the work is explicitly marked one-off.
+- Medium and large operating workflows have a scale-appropriate Project Agent-Readiness Audit, or an escape hatch explains why it was deferred.
 - Housekeeping removes or quarantines scratch artifacts, rejected candidates, temp ports, stale logs, and discovery pollution.
 
 Level 2 additionally requires replay, budget handling, continuation, and verified conformance.
